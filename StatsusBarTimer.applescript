@@ -13,7 +13,7 @@ property timer : missing value -- a repeating timer for updating elapsed time
 property updateInterval : 1 -- time between updates (seconds)
 property colorIntervals : {30, 60} -- green>yellow and yellow>red color change intervals (seconds)
 
-global elapsed, paused -- total elapsed time and a flag to pause the update
+global elapsed, |paused| -- total elapsed time and a flag to pause the update
 global titleFont
 global greenColor, yellowColor, redColor
 
@@ -32,7 +32,7 @@ end run
 
 on doStuff() -- set stuff up and start timer
     set elapsed to 0
-    set paused to true
+    set |paused| to true
     
     # font and colors
     set titleFont to current application's NSFont's fontWithName:"Courier New Bold" |size|:16 -- boldSystemFontOfSize:14
@@ -66,25 +66,25 @@ end doStuff
 
 on activated:notification -- notification when app is activated
     set appName to (notification's userInfo's NSWorkspaceApplicationKey's localizedName()) as text
-    if appName is watchedApp then set paused to false -- resume elapsed count
+    if appName is watchedApp then set |paused| to false -- resume elapsed count
 end activated:
 
 on deactivated:notification -- notification when app is deactivated
     set appName to (notification's userInfo's NSWorkspaceApplicationKey's localizedName()) as text
     if appName is watchedApp then
-        set paused to true -- pause elapsed count
+        set |paused| to true -- pause elapsed count
         statusItem's button's setTitle:formatTime(elapsed)
     end if
 end deactivated:
 
 to updateElapsed:sender -- called by the repeating timer to update the elapsed time display
-    if paused then return -- skip it
+    if |paused| then return -- skip it
     set elapsed to elapsed + updateInterval
     try
         set attrText to current application's NSMutableAttributedString's alloc's initWithString:formatTime(elapsed)
-        if elapsed ² colorIntervals's first item then -- first color
+        if elapsed <= colorIntervals's first item then -- first color
             attrText's setAttributes:greenColor range:{0, attrText's |length|()}
-        else if elapsed > colorIntervals's first item and elapsed ² colorIntervals's second item then -- middle color
+        else if elapsed > colorIntervals's first item and elapsed <= colorIntervals's second item then -- middle color
             attrText's setAttributes:yellowColor range:{0, attrText's |length|()}
         else -- last color
             attrText's setAttributes:redColor range:{0, attrText's |length|()}
@@ -102,10 +102,10 @@ to reset:sender -- reset the elapsed time
 end reset:
 
 to formatTime(theSeconds) -- return formatted string (hh:mm:ss) from seconds
-    if class of theSeconds is integer then tell "000000" & Â
-        (10000 * (theSeconds mod days div hours) Â
-            + 100 * (theSeconds mod hours div minutes) Â
-            + (theSeconds mod minutes)) Â
+    if class of theSeconds is integer then tell "000000" & Â¬
+        (10000 * (theSeconds mod days div hours) Â¬
+            + 100 * (theSeconds mod hours div minutes) Â¬
+            + (theSeconds mod minutes)) Â¬
             to set theSeconds to (text -6 thru -5) & ":" & (text -4 thru -3) & ":" & (text -2 thru -1)
     return theSeconds
 end formatTime
