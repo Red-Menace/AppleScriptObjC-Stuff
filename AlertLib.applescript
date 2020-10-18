@@ -50,10 +50,11 @@ to showAlert given arguments:arguments
         end if
         if button of response is cancelButton then error number -128
         return response
-    on error errmess number errnum
+    on error errmess number errnum -- there are a few ways to deal with a cancel, pick one
         tell me to activate
+		  display alert "Error " & errnum & " from showAlert handler:" message errmess
         log "Error " & errnum & " from showAlert handler:" & return & errmess
-        display alert "Error " & errnum & " from showAlert handler:" message errmess
+        return response
     end try
 end showAlert
 
