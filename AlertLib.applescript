@@ -17,7 +17,7 @@ on run -- examples
     
     showAlert given arguments:{info:"This is a simple NSAlert example."} -- simple/defaults
     log result
-    showAlert given arguments:{addedWidth:50, title:"This is a test", giveUpTime:15, message:"", input:{"Testing" & return, "Whatever" & return, "A really, really, long label to see how really, really, long labels appear"}, info:"This is a more complex NSAlert example using all arguments.", accessoryType:"checkbox", buttons:{"Cancel", "Wait...", "What?", "OK"}, icon:"caution"} -- everything
+    showAlert given arguments:{addedWidth:50, title:"This is a test", giveUpTime:15, message:"", input:{"Testing" & return, "Whatever" & return, "A really, really, long label to see how really, really, long labels appear"}, info:"This is a more complex NSAlert example using all arguments.", accessoryType:"checkbox", buttons:{"Cancel", "Wait...", "What?", "OK"}, icon:"stop"} -- everything
     log result
 end run
 
@@ -125,7 +125,7 @@ to setIcon:iconType
         alert's setAlertStyle:(current application's NSCriticalAlertStyle)
     else if iconType is in {"informational", "warning"} then
         alert's setAlertStyle:(current application's NSInformationalAlertStyle)
-    else if iconType is in {"Note", "Caution", "Stop"} then -- system icon  
+    else if iconType is in {"Note", "Stop"} then -- system icon  
         set iconImage to current application's NSImage's alloc's initByReferencingFile:(SYS_RESOURCES & "Alert" & iconType & "Icon.icns")
     else -- from a file - ASObjC doesn't like a bad initWithContentsOfFile, so this handles errors better
         set iconImage to current application's NSImage's alloc's initByReferencingFile:(iconType as text)
@@ -163,13 +163,14 @@ to setAccessory:theType using:input addedWidth:addedWidth
     return accessory
 end setAccessory:using:addedWidth:
 
-# Adjust the timerField's frame for the alert height.
+# Adjust the timerField's frame for the icon location.
 on adjustTimerField()
     if timerField is missing value then return
+   set padding to 13
+   if (system attribute "sys1") > 10 then set padding to 2 -- Big Sur +
     alert's layout() # get new layout
-    set spacing to last item of last item of ((get alert's |window|'s frame) as list) -- top of window
-    set spacing to spacing - 132 -- put it below the icon
-    timerField's setFrameOrigin:[37, spacing]
+   set spacing to first item of ((first item of alert's |window|'s contentView's subviews)'s frame as list)
+   timerField's setFrameOrigin:{(first item of spacing) + padding, (second item of spacing) - 18}
     alert's |window|'s contentView's addSubview:timerField
 end adjustTimerField
 
@@ -267,6 +268,7 @@ to makeButton(radio, label)
         set label to text 1 thru -2 of label -- strip the return
     end if
     button's setTitle:label
+    button's setToolTip:(label)
     return button
 end makeButton
 
@@ -282,7 +284,7 @@ to setupTimer:giveUpTime
     timerField's setFont:(current application's NSFont's fontWithName:"Menlo Bold" |size|:14) -- mono-spaced
     timerField's setEditable:false
     timerField's setSelectable:false
-    timerField's setAlignment:(current application's NSCenterTextAlignment)
+    timerField's setAlignment:(current application's NSCenterTextAlignment) -- not quite right in Big Sur
     timerField's setToolTip:"Time Remaining"
     tell (current application's NSTimer's timerWithTimeInterval:1 target:me selector:"updateCountdown:" userInfo:(missing value) repeats:true)
         set countdown to (giveUpTime as integer)
