@@ -107,9 +107,9 @@ to updateElapsed:sender -- called by the repeating timer to update the elapsed t
 	try
 		set newTime to formatTime(elapsed) -- plain text
 		set attrText to current application's NSMutableAttributedString's alloc's initWithString:newTime
-		tell colorIntervals to if elapsed ² its first item then -- first color
+		tell colorIntervals to if elapsed â‰¤ its first item then -- first color
 			attrText's setAttributes:greenColor range:{0, attrText's |length|()}
-		else if elapsed > its first item and elapsed ² its second item then -- middle color
+		else if elapsed > its first item and elapsed â‰¤ its second item then -- middle color
 			attrText's setAttributes:yellowColor range:{0, attrText's |length|()}
 		else -- last color
 			attrText's setAttributes:redColor range:{0, attrText's |length|()}
@@ -160,10 +160,10 @@ to reset:sender -- reset the elapsed time
 end reset:
 
 to formatTime(theSeconds) -- return formatted string (hh:mm:ss) from seconds
-	if class of theSeconds is integer then tell "000000" & Â
-		(10000 * (theSeconds mod days div hours) Â
-			+ 100 * (theSeconds mod hours div minutes) Â
-			+ (theSeconds mod minutes)) Â
+	if class of theSeconds is integer then tell "000000" & Â¬
+		(10000 * (theSeconds mod days div hours) Â¬
+			+ 100 * (theSeconds mod hours div minutes) Â¬
+			+ (theSeconds mod minutes)) Â¬
 			to set theSeconds to (text -6 thru -5) & ":" & (text -4 thru -3) & ":" & (text -2 thru -1)
 	return theSeconds
 end formatTime
