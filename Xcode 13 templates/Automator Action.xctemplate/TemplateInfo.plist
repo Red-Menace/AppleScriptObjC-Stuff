@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Kind</key>
+    <string>Xcode.Xcode3.ProjectTemplateUnitKind</string>
+    <key>Identifier</key>
+    <string>com.apple.dt.unit.automatorAction</string>
+    <key>Ancestors</key>
+    <array>
+        <string>com.apple.dt.unit.systemPlugInBase</string>
+    </array>
+    <key>Concrete</key>
+    <true/>
+    <key>Description</key>
+    <string>This template builds an Automator action.</string>
+    <key>Targets</key>
+    <array>
+        <dict>
+            <key>TargetIdentifier</key>
+            <string>com.apple.dt.automatorActionTarget</string>
+            <key>SharedSettings</key>
+            <dict>
+                <key>INSTALL_PATH</key>
+                <string>$(HOME)/Library/Automator</string>
+                <key>WRAPPER_EXTENSION</key>
+                <string>action</string>
+                <key>OTHER_OSAFLAGS</key>
+                <string>-x -t 0 -c 0</string>
+                <key>INFOPLIST_KEY_NSHumanReadableCopyright</key>
+                <string>___COPYRIGHT___</string>
+                <key>INFOPLIST_FILE</key>
+                <string>___PACKAGENAME___/Info.plist</string>
+            </dict>
+            <key>BuildPhases</key>
+            <array>
+                <dict>
+                    <key>Class</key>
+                    <string>Sources</string>
+                </dict>
+                <dict>
+                    <key>Class</key>
+                    <string>Frameworks</string>
+                </dict>
+                <dict>
+                    <key>Class</key>
+                    <string>Resources</string>
+                </dict>
+                <dict>
+                    <key>Class</key>
+                    <string>ShellScript</string>
+                    <key>ShellPath</key>
+                    <string>/bin/sh</string>
+                    <key>ShellScript</key>
+                    <string>amlint &quot;${BUILT_PRODUCTS_DIR}/${FULL_PRODUCT_NAME}&quot;</string>
+                </dict>
+            </array>
+        </dict>
+    </array>
+    <key>Options</key>
+    <array>
+        <dict>
+            <key>Identifier</key>
+            <string>automatorType</string>
+            <key>Name</key>
+            <string>Type:</string>
+            <key>Description</key>
+            <string>What type of action to create</string>
+            <key>Type</key>
+            <string>popup</string>
+            <key>Default</key>
+            <string>Cocoa</string>
+            <key>Units</key>
+            <dict>
+                <key>Cocoa</key>
+                <dict>
+                    <key>Nodes</key>
+                    <array>
+                        <string>___PACKAGENAMEASIDENTIFIER___.h</string>
+                        <string>___PACKAGENAMEASIDENTIFIER___.m</string>
+                        <string>Base.lproj/main.xib</string>
+                        <string>Info.plist:AMAccepts:com.apple.cocoa.path</string>
+                        <string>Info.plist:AMProvides:com.apple.cocoa.path</string>
+                    </array>
+                    <key>Definitions</key>
+                    <dict>
+                        <key>___PACKAGENAMEASIDENTIFIER___.h</key>
+                        <dict>
+                            <key>Path</key>
+                            <string>___PACKAGENAMEASIDENTIFIER___.h</string>
+                        </dict>
+                        <key>___PACKAGENAMEASIDENTIFIER___.m</key>
+                        <dict>
+                            <key>Path</key>
+                            <string>___PACKAGENAMEASIDENTIFIER___.m</string>
+                        </dict>
+                    </dict>
+                    <key>Targets</key>
+                    <array>
+                        <dict>
+                            <key>SharedSettings</key>
+                            <dict>
+                                <key>INFOPLIST_KEY_NSPrincipalClass</key>
+                                <string>___PACKAGENAMEASIDENTIFIER___</string>
+                            </dict>
+                        </dict>
+                    </array>
+                </dict>
+                <key>Cocoa-AppleScript</key>
+                <dict>
+                    <key>Nodes</key>
+                    <array>
+                        <string>___PACKAGENAMEASIDENTIFIER___.applescript</string>
+                        <string>Base.lproj/main.xib</string>
+                        <string>Info.plist:AMAccepts:com.apple.cocoa.path</string>
+                        <string>Info.plist:AMProvides:com.apple.cocoa.path</string>
+                    </array>
+                    <key>Definitions</key>
+                    <dict>
+                        <key>___PACKAGENAMEASIDENTIFIER___.applescript</key>
+                        <dict>
+                            <key>Path</key>
+                            <string>___PACKAGENAMEASIDENTIFIER___.applescript</string>
+                        </dict>
+                    </dict>
+                    <key>Targets</key>
+                    <array>
+                        <dict>
+                            <key>SharedSettings</key>
+                            <dict>
+                                <key>INFOPLIST_KEY_NSPrincipalClass</key>
+                                <string>___PACKAGENAMEASIDENTIFIER___</string>
+                                <key>EXECUTABLE_NAME</key>
+                                <string></string>
+                            </dict>
+                        </dict>
+                    </array>
+                </dict>
+                <key>Shell Script</key>
+                <dict>
+                    <key>Nodes</key>
+                    <array>
+                        <string>main.command</string>
+                        <string>Base.lproj/main.xib</string>
+                        <string>Info.plist:AMAccepts:com.apple.cocoa.string</string>
+                        <string>Info.plist:AMProvides:com.apple.cocoa.string</string>
+                    </array>
+                    <key>Definitions</key>
+                    <dict>
+                        <key>en.lproj/InfoPlist.strings:AMApplication</key>
+                        <string>/*  AMApplication localized strings  */
+/* e.g. &quot;Terminal&quot; = &quot;Terminal&quot;; */
+
+/*  AMCategory localized strings  */
+/* e.g. &quot;Terminal&quot; = &quot;Terminal&quot;; */
+</string>
+                        <key>main.command</key>
+                        <dict>
+                            <key>Path</key>
+                            <string>main.command</string>
+                        </dict>
+                        <key>Base.lproj/main.xib</key>
+                        <dict>
+                            <key>Path</key>
+                            <string>mainShell.xib</string>
+                        </dict>
+                    </dict>
+                    <key>Targets</key>
+                    <array>
+                        <dict>
+                            <key>SharedSettings</key>
+                            <dict>
+                                <key>INFOPLIST_KEY_NSPrincipalClass</key>
+                                <string>AMShellScriptAction</string>
+                                <key>EXECUTABLE_NAME</key>
+                                <string></string>
+                            </dict>
+                        </dict>
+                    </array>
+                </dict>
+            </dict>
+        </dict>
+        <dict>
+            <key>Identifier</key>
+            <string>automatorActionCategory</string>
+            <key>Required</key>
+            <true/>
+            <key>Name</key>
+            <string>Category:</string>
+            <key>Description</key>
+            <string>Automator action category.</string>
+            <key>Type</key>
+            <string>popup</string>
+            <key>Default</key>
+            <string>Utilities</string>
+            <key>Values</key>
+            <array>
+                <string>Calendar</string>
+                <string>Chat</string>
+                <string>Contacts</string>
+                <string>Developer</string>
+                <string>Documents</string>
+                <string>Files and Folders</string>
+                <string>Fonts</string>
+                <string>Internet</string>
+                <string>Mail</string>
+                <string>Movies</string>
+                <string>Music</string>
+                <string>PDF Files</string>
+                <string>Photos</string>
+                <string>Presentations</string>
+                <string>System</string>
+                <string>Text</string>
+                <string>Utilities</string>
+            </array>
+            <key>Variables</key>
+            <dict>
+                <key>Calendar</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryCalendar</string>
+                </dict>
+                <key>Chat</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryChat</string>
+                </dict>
+                <key>Contacts</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryContacts</string>
+                </dict>
+                <key>Developer</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryDeveloper</string>
+                </dict>
+                <key>Documents</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryDocuments</string>
+                </dict>
+                <key>Files and Folders</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryFilesAndFolders</string>
+                </dict>
+                <key>Fonts</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryFonts</string>
+                </dict>
+                <key>Internet</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryInternet</string>
+                </dict>
+                <key>Mail</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryMail</string>
+                </dict>
+                <key>Movies</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryMovies</string>
+                </dict>
+                <key>Music</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryMusic</string>
+                </dict>
+                <key>PDF Files</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryPDFs</string>
+                </dict>
+                <key>Photos</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryPhotos</string>
+                </dict>
+                <key>Presentations</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryPresentations</string>
+                </dict>
+                <key>System</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategorySystem</string>
+                </dict>
+                <key>Text</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryText</string>
+                </dict>
+                <key>Utilities</key>
+                <dict>
+                    <key>amActionCategory</key>
+                    <string>AMCategoryUtilities</string>
+                </dict>
+            </dict>
+        </dict>
+    </array>
+    <key>Nodes</key>
+    <array>
+        <string>Info.plist:automator</string>
+        <string>en.lproj/InfoPlist.strings:AMApplication</string>
+        <string>en.lproj/InfoPlist.strings:automator</string>
+    </array>
+    <key>Definitions</key>
+    <dict>
+        <key>Info.plist:automator</key>
+        <string>&lt;key&gt;AMApplication&lt;/key&gt;
+&lt;string&gt;(* Primary Application used by this action goes here. *)&lt;/string&gt;
+&lt;key&gt;AMCanShowSelectedItemsWhenRun&lt;/key&gt;
+&lt;false/&gt;
+&lt;key&gt;AMCanShowWhenRun&lt;/key&gt;
+&lt;true/&gt;
+&lt;key&gt;AMCategory&lt;/key&gt;
+&lt;string&gt;___VARIABLE_amActionCategory___&lt;/string&gt;
+&lt;key&gt;AMDefaultParameters&lt;/key&gt;
+&lt;dict/&gt;
+&lt;key&gt;AMDescription&lt;/key&gt;
+&lt;dict&gt;
+    &lt;key&gt;AMDAlert&lt;/key&gt;
+    &lt;string&gt;(* AMDAlert text goes here. (optional) *)&lt;/string&gt;
+    &lt;key&gt;AMDInput&lt;/key&gt;
+    &lt;string&gt;(* AMDInput text to further explain the types accepted as input goes here. (optional) *)&lt;/string&gt;
+    &lt;key&gt;AMDNote&lt;/key&gt;
+    &lt;string&gt;(* AMDNote text goes here. (optional) *)&lt;/string&gt;
+    &lt;key&gt;AMDOptions&lt;/key&gt;
+    &lt;string&gt;(* AMDOptions text to further explain configuration options in the UI goes here. (optional) *)&lt;/string&gt;
+    &lt;key&gt;AMDRelatedActions&lt;/key&gt;
+    &lt;string&gt;(* AMDRelatedActions bundle ids go here. (optional) *)&lt;/string&gt;
+    &lt;key&gt;AMDRequires&lt;/key&gt;
+    &lt;string&gt;(* AMDRequires text to explain anything outside of Automator required for the action&apos;s operation, e.g. a web page open in Safari, goes here. (optional) *)&lt;/string&gt;
+    &lt;key&gt;AMDResult&lt;/key&gt;
+    &lt;string&gt;(* AMDResult text to further explain the types provided as output goes here. (optional) *)&lt;/string&gt;
+    &lt;key&gt;AMDSummary&lt;/key&gt;
+    &lt;string&gt;(* AMDSummary text to explain what your action does goes here. *)&lt;/string&gt;
+    &lt;key&gt;AMDWebsite&lt;/key&gt;
+    &lt;string&gt;(* AMDWebsite URL to additional information or documentation for the action goes here. (optional) *)&lt;/string&gt;
+&lt;/dict&gt;
+&lt;key&gt;AMIconName&lt;/key&gt;
+&lt;string&gt;(* The name of the icon *)&lt;/string&gt;
+&lt;key&gt;AMKeywords&lt;/key&gt;
+&lt;array/&gt;
+&lt;key&gt;AMName&lt;/key&gt;
+&lt;string&gt;___PACKAGENAMEASXML___&lt;/string&gt;
+&lt;key&gt;AMRequiredResources&lt;/key&gt;
+&lt;array/&gt;
+&lt;key&gt;AMWarning&lt;/key&gt;
+&lt;dict&gt;
+    &lt;key&gt;Action&lt;/key&gt;
+    &lt;string&gt;(* Action name to be suggested to add prior to this action to make the task safer, e.g. com.apple.Automator.CopyFiles, goes here. *)&lt;/string&gt;
+    &lt;key&gt;ApplyButton&lt;/key&gt;
+    &lt;string&gt;(* Button label for user to add proposed Action, e.g. Add. *)&lt;/string&gt;
+    &lt;key&gt;IgnoreButton&lt;/key&gt;
+    &lt;string&gt;(* Button label for user not to add proposed Action, e.g. Don&apos;t Add. *)&lt;/string&gt;
+    &lt;key&gt;Level&lt;/key&gt;
+    &lt;integer&gt;0&lt;/integer&gt;
+    &lt;key&gt;Message&lt;/key&gt;
+    &lt;string&gt;(* Warning message presented to user goes here. *)&lt;/string&gt;
+&lt;/dict&gt;
+</string>
+        <key>Info.plist:AMAccepts</key>
+        <dict>
+            <key>Beginning</key>
+            <string>&lt;key&gt;AMAccepts&lt;/key&gt;
+&lt;dict&gt;
+    &lt;key&gt;Container&lt;/key&gt;
+    &lt;string&gt;List&lt;/string&gt;
+    &lt;key&gt;Optional&lt;/key&gt;
+    &lt;true/&gt;
+    &lt;key&gt;Types&lt;/key&gt;
+    &lt;array&gt;
+</string>
+            <key>End</key>
+            <string>    &lt;/array&gt;
+&lt;/dict&gt;
+</string>
+            <key>Indent</key>
+            <integer>2</integer>
+        </dict>
+        <key>Info.plist:AMAccepts:*</key>
+        <string>&lt;string&gt;___*___&lt;/string&gt;
+</string>
+        <key>Info.plist:AMProvides</key>
+        <dict>
+            <key>Beginning</key>
+            <string>&lt;key&gt;AMProvides&lt;/key&gt;
+&lt;dict&gt;
+    &lt;key&gt;Container&lt;/key&gt;
+    &lt;string&gt;List&lt;/string&gt;
+    &lt;key&gt;Types&lt;/key&gt;
+    &lt;array&gt;
+</string>
+            <key>End</key>
+            <string>    &lt;/array&gt;
+&lt;/dict&gt;
+</string>
+            <key>Indent</key>
+            <integer>2</integer>
+        </dict>
+        <key>Info.plist:AMProvides:*</key>
+        <string>&lt;string&gt;___*___&lt;/string&gt;
+</string>
+        <key>en.lproj/InfoPlist.strings</key>
+        <dict>
+            <key>SortOrder</key>
+            <integer>201</integer>
+        </dict>
+        <key>en.lproj/InfoPlist.strings:AMApplication</key>
+        <string>/* AMApplication localized strings */
+/* e.g. &quot;TextEdit&quot; = &quot;TextEdit&quot;; */
+
+/* AMCategory localized strings */
+/* e.g. &quot;Text&quot; = &quot;Text&quot;; */
+</string>
+        <key>en.lproj/InfoPlist.strings:automator</key>
+        <string>AMName = &quot;___PACKAGENAME___&quot;;
+
+/* AMDefaultParameters localized values */
+/* e.g. myDefaultIntegerParameter = 0; */
+/* e.g. myDefaultStringParameter = &quot;Default String Value&quot;; */
+
+/* AMDescription localized strings */
+AMDAlert = &quot;(* AMDAlert text goes here. (optional) *)&quot;;
+AMDInput = &quot;(* AMDInput text to further explain the types accepted as input goes here. (optional) *)&quot;;
+AMDNote = &quot;(* AMDNote text goes here. (optional) *)&quot;;
+AMDOptions = &quot;(* AMDOptions text to further explain configuration options in the UI goes here. (optional) *)&quot;;
+AMDResult = &quot;(* AMDResult text to further explain the types provided as output goes here. (optional) *)&quot;;
+AMDRequires = &quot;(* AMDRequires text to explain anything outside of Automator required for the action&apos;s operation, e.g. a web page open in Safari, goes here. (optional) *)&quot;;
+AMDSummary = &quot;(* AMDSummary text to explain what your action does goes here. *)&quot;;
+AMDWebsite = &quot;(* AMDWebsite URL to additional information or documentation for the action goes here. (optional) *)&quot;;
+
+/* AMKeyword localized strings */
+/* e.g. &quot;Filter&quot; = &quot;Filter&quot;; */
+
+/* AMWarning localized strings */
+ApplyButton = &quot;(* Button label for user to add proposed Action, e.g. Add. *)&quot;;
+IgnoreButton = &quot;(* Button label for user not to add proposed Action, e.g. Don&apos;t Add. *)&quot;;
+Message = &quot;(* Warning message presented to user goes here. *)&quot;;
+</string>
+        <key>Base.lproj/main.xib</key>
+        <dict>
+            <key>Path</key>
+            <string>mainCocoa.xib</string>
+        </dict>
+    </dict>
+	<key>Image</key>
+	<dict>
+		<key>SystemSymbolName</key>
+		<string>gearshape</string>
+	</dict>
+</dict>
+</plist>

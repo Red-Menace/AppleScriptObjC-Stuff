@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Kind</key>
+    <string>Xcode.Xcode3.ProjectTemplateUnitKind</string>
+    <key>Identifier</key>
+    <string>com.apple.dt.unit.cocoaApplicationAppleScript</string>
+    <key>Ancestors</key>
+    <array>
+        <string>com.apple.dt.unit.cocoaApplicationBase</string>
+    </array>
+    <key>Concrete</key>
+    <true/>
+    <key>Description</key>
+    <string>This template creates a Cocoa application written in AppleScript.</string>
+    <key>SortOrder</key>
+    <integer>1</integer>
+    <key>Targets</key>
+    <array>
+        <dict>
+            <key>Frameworks</key>
+            <array>
+                <string>AppleScriptObjC</string>
+            </array>
+        </dict>
+    </array>
+    <key>Options</key>
+    <array>
+        <dict>
+            <key>Identifier</key>
+            <string>appLifecycle</string>
+            <key>Override</key>
+            <string>Cocoa</string>
+        </dict>
+        <dict>
+            <key>Identifier</key>
+            <string>documentBased</string>
+            <key>NotPersisted</key>
+            <true/>
+            <key>Name</key>
+            <string>Create Document-Based Application</string>
+            <key>Description</key>
+            <string>Whether the application should be document-based</string>
+            <key>Type</key>
+            <string>checkbox</string>
+            <key>Default</key>
+            <string>false</string>
+            <key>Units</key>
+            <dict>
+                <key>true</key>
+                <dict>
+                    <key>Targets</key>
+                    <array>
+                        <dict>
+                            <key>SharedSettings</key>
+                            <dict>
+                                <key>INFOPLIST_FILE</key>
+                                <string>___PACKAGENAME___/Info.plist</string>
+                            </dict>
+                        </dict>
+                    </array>
+                    <key>Nodes</key>
+                    <array>
+                        <string>Base.lproj/MainMenu.xib</string>
+                        <string>CustomDocument.applescript</string>
+                        <string>Base.lproj/CustomDocument.xib</string>
+                        <string>Info.plist:DocumentTypes</string>
+                    </array>
+                    <key>Definitions</key>
+                    <dict>
+                        <key>Base.lproj/MainMenu.xib</key>
+                        <dict>
+                            <key>Path</key>
+                            <string>MainMenuDoc.xib</string>
+                            <key>SortOrder</key>
+                            <integer>101</integer>
+                        </dict>
+                        <key>Base.lproj/CustomDocument.xib</key>
+                        <dict>
+                            <key>Path</key>
+                            <string>Document.xib</string>
+                        </dict>
+                        <key>CustomDocument.applescript</key>
+                        <dict>
+                            <key>Path</key>
+                            <string>Document.applescript</string>
+                        </dict>
+                        <key>Info.plist:CFBundleDocumentTypes</key>
+                        <string><![CDATA[<key>CFBundleDocumentTypes</key>
+<array>
+    <dict>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>NSDocumentClass</key>
+        <string>CustomDocument</string>
+    </dict>
+</array>
+]]></string>
+                    </dict>
+                </dict>
+                <key>false</key>
+                <dict>
+                    <key>Nodes</key>
+                    <array>
+                        <string>AppDelegate.applescript</string>
+                        <string>Base.lproj/MainMenu.xib</string>
+                    </array>
+                    <key>Definitions</key>
+                    <dict>
+                        <key>AppDelegate.applescript</key>
+                        <dict>
+                            <key>Path</key>
+                            <string>AppDelegate.applescript</string>
+                        </dict>
+                        <key>Base.lproj/MainMenu.xib</key>
+                        <dict>
+                            <key>Path</key>
+                            <string>MainMenu.xib</string>
+                            <key>SortOrder</key>
+                            <integer>101</integer>
+                        </dict>
+                    </dict>
+                </dict>
+            </dict>
+        </dict>
+    </array>
+    <key>Nodes</key>
+    <array>
+        <string>main.m:comments</string>
+        <string>main.m:imports:importCocoa</string>
+        <string>main.m:imports:importFramework:AppleScriptObjC</string>
+        <string>main.m:main:NSApplicationMain</string>
+    </array>
+    <key>Definitions</key>
+    <dict>
+        <key>main.m:main:NSApplicationMain</key>
+        <string>@autoreleasepool {
+    // Setup code that might create autoreleased objects goes here.
+}
+[[NSBundle mainBundle] loadAppleScriptObjectiveCScripts];
+return NSApplicationMain(argc, argv);
+</string>
+    </dict>
+	<key>Image</key>
+	<dict>
+		<key>SystemSymbolName</key>
+		<string>applescript</string>
+	</dict>
+</dict>
+</plist>
