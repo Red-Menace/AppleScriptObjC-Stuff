@@ -40,7 +40,11 @@ Handlers include the following objects/classes:
     * CheckBox and Radio buttons (individual and grouped in a box)
 * NSComboBox
 * NSImageView
+* NSMenu (including submenus)
+* NSOpenPanel-NSSavePanel
+* NSPathControl
+* NSPopUpButton
 * NSWindow-NSPanel
 
-The NSAlert and NSWindow scripts include a run handler, so they can also be used for testing and laying out UI items.
+The NSAlert, NSWindow, and Open/Save panel scripts include a run handler, so they can also be used for testing and laying out UI items.
 
