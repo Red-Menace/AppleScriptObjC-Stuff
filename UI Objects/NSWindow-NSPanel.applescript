@@ -8,7 +8,7 @@ use scripting additions
 property mainWindow : missing value -- this will be the NSWindow object
 
 # script properties
-property errRec : missing value -- this will be a record of the message and number of any error
+property failed : missing value -- this will be a record of the message and number of any error
 
 
 on run -- example can be run as app and from Script Editor
@@ -18,10 +18,10 @@ on run -- example can be run as app and from Script Editor
 		else -- UI stuff needs to be done on the main thread
 			my performSelectorOnMainThread:"doStuff" withObject:(missing value) waitUntilDone:true
 		end if
-		if errRec is not missing value then error errRec's errMsg number errRec's errNum
+		if failed is not missing value then error failed's errmsg number failed's errnum
 		log "done"
-	on error errMsg number errNum
-		display alert "Error " & errNum message errMsg
+	on error errmsg number errnum
+		display alert "Error " & errnum message errmsg
 	end try
 end run
 
@@ -33,8 +33,8 @@ on doStuff() -- do the window stuff
 		-- add other elements as desired
 		
 		mainWindow's makeKeyAndOrderFront:me -- show it
-	on error errMsg number errNum
-		set my errRec to {errMsg:errMsg, errNum:errNum}
+	on error errmsg number errnum
+		set my failed to {errmsg:errmsg, errnum:errnum}
 	end try
 end doStuff
 
@@ -73,8 +73,8 @@ end makeWindowController
 
 
 #
-# NSWindow style masks:
-# NSWindowStyleMaskBorderless = 0 -- for combinations, add mask values together
+# NSWindow style masks (for combinations, add mask values together):
+# NSWindowStyleMaskBorderless = 0
 # NSWindowStyleMaskTitled = 1
 # NSWindowStyleMaskClosable = 2
 # NSWindowStyleMaskMiniaturizable = 4

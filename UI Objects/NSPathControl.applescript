@@ -13,7 +13,7 @@ mainWindow's contentView's addSubview:pathControl
 *)
 
 
-# Make and return a path control - the pathURL can be posix, HFS, or alias.
+# Make and return a path control - the pathURL can also be given as posix, HFS, or alias.
 on makePathControl at origin given width:width : 200, pathURL:pathURL : missing value, placeholder:placeholder : missing value, popup:popup : false, allowedTypes:allowedTypes : missing value, editable:editable : true, backgroundColor:backgroundColor : missing value, action:action : "pathAction:", target:target : missing value
 	if pathURL is (missing value) then set pathURL to (path to desktop folder)
 	if class of pathURL is not current application's NSURL then set pathURL to current application's NSURL's fileURLWithPath:(POSIX path of (pathURL as text))
