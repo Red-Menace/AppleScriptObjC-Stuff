@@ -43,7 +43,9 @@ Handlers include the following objects/classes:
 * NSMenu (including submenus)
 * NSOpenPanel-NSSavePanel
 * NSPathControl
+* NSPopover
 * NSPopUpButton
+* NSTextField (includes NSSecureTextField)
 * NSWindow-NSPanel
 
 The NSAlert, NSWindow, and Open/Save panel scripts include a run handler, so they can also be used for testing and laying out UI items.
