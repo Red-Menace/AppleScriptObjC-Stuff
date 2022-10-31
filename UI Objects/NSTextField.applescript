@@ -9,10 +9,10 @@ property mainWindow : missing value -- globals can also be used
 property textField : missing value
 property labelField : missing value
 
-set my textField to makeTextField at {100, 100} given placeholder:"placeholder" -- given arguments are optional
+set my textField to makeTextField at {100, 100} without dimensions given stringValue:"This is some testing text", placeholder:"placeholder" -- given arguments are optional
 mainWindow's contentView's addSubview:textField
 
-set my labelField to makeTextField at {100, 120} with label given stringValue:"Testing" -- given arguments are optional
+set my labelField to makeTextField at {100, 120} with label given stringValue:"Testing:" -- given arguments are optional
 mainWindow's contentView's addSubview:labelField
 *)
 
@@ -49,7 +49,7 @@ end makeTextField
 
 
 # 
-# Bezel Styles:
+# NSTextFieldBezelStyle:
 # NSTextFieldSquareBezel = 0
 # NSTextFieldRoundedBezel = 1
 #
