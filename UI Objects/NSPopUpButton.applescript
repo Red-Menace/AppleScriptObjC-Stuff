@@ -17,7 +17,8 @@ mainWindow's contentView's addSubview:popupButton
 # In a pop-up list, the index starts at 0, with the title (automatically) being the checked/selected item.
 # In a pull-down list, the index starts at 1, with index 0 used to (manually) store the list’s title.
 # The pull-down title (if any) will be added to the beginning of the list.
-to makePopupButton at origin given dimensions:dimensions : {200, 20}, itemList:itemList : {}, title:title : missing value, pullsDown:pullsDown : false, tag:tag : missing value, action:action : "popupButtonAction:", target:target : missing value
+to makePopupButton at origin given dimensions:dimensions : missing value, itemList:itemList : {}, title:title : missing value, pullsDown:pullsDown : false, tag:tag : missing value, action:action : "popupButtonAction:", target:target : missing value
+	if dimensions is in {{}, 0, false, missing value} then set dimensions to {0, 0}
 	tell (current application's NSPopUpButton's alloc's initWithFrame:{origin, dimensions} pullsDown:pullsDown)
 		if pullsDown is true then if title is not in {"", missing value} then
 			set begining of itemList to title
@@ -30,6 +31,7 @@ to makePopupButton at origin given dimensions:dimensions : {200, 20}, itemList:i
 			its setTarget:target
 			its setAction:(action as text) -- see the following action handler
 		end if
+		if dimensions is {0, 0} then its sizeToFit()
 		return it
 	end tell
 end makePopupButton
