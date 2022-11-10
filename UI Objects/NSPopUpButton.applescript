@@ -4,43 +4,57 @@ use framework "Foundation"
 use scripting additions
 
 
-(* example:
+(*
+
+	In a pop-up list, the index starts at 0, with the title (automatically) set to the selected item.
+	In a pull-down list, the index starts at 1, with index 0 used to (manually) store the list’s title.
+
+# example:
 property mainWindow : missing value -- globals can also be used
 property popupButton : missing value
 
-set my popupButton to makePopupButton at {20, 20} given dimensions:{100, 25}, itemList:{"one", "two", "three", "four"} -- given arguments are optional
+set my popupButton to makePopupButton at {20, 20} given itemList:{"one", "two", "three", "This is the fourth menu item."}, title:"two" -- given arguments are optional
 mainWindow's contentView's addSubview:popupButton
 *)
 
 
 # Make and return an NSPopUpButton.
-# In a pop-up list, the index starts at 0, with the title (automatically) being the checked/selected item.
-# In a pull-down list, the index starts at 1, with index 0 used to (manually) store the list’s title.
-# The pull-down title (if any) will be added to the beginning of the list.
-to makePopupButton at origin given dimensions:dimensions : missing value, itemList:itemList : {}, title:title : missing value, pullsDown:pullsDown : false, tag:tag : missing value, action:action : "popupButtonAction:", target:target : missing value
-	if dimensions is in {{}, 0, false, missing value} then set dimensions to {0, 0}
-	tell (current application's NSPopUpButton's alloc's initWithFrame:{origin, dimensions} pullsDown:pullsDown)
-		if pullsDown is true then if title is not in {"", missing value} then
-			set begining of itemList to title
-			its setTitle:title
-		end if
+# A maxWidth of 0 will size to fit the menu.
+to makePopupButton at origin given maxWidth:maxWidth : missing value, itemList:itemList : {}, title:title : "", pullDown:pullDown : false, tag:tag : missing value, action:action : "popupButtonAction:", target:target : missing value
+	if maxWidth < 0 or maxWidth is in {false, missing value} then set maxWidth to 0
+	tell (current application's NSPopUpButton's alloc's initWithFrame:{origin, {maxWidth, 25}} pullsDown:pullDown)
 		its addItemsWithTitles:itemList
+		if pullDown is true then -- initial title
+			its insertItemWithTitle:"" atIndex:0 -- add placeholder
+			its setTitle:title -- blank title if missing value
+		else -- initial selection
+			if title is not missing value and title is not in itemList then set title to first item of itemList
+		end if
+		its selectItemWithTitle:title -- blank title (all items deselected) if missing value
 		if tag is not missing value then its setTag:tag
 		if action is not missing value then
 			if target is missing value then set target to me -- 'me' can't be used as an optional default
 			its setTarget:target
 			its setAction:(action as text) -- see the following action handler
 		end if
-		if dimensions is {0, 0} then its sizeToFit()
+		if maxWidth is 0 then -- sizeToFit works differently for pull-down (title vs menu), so do it manually
+			set theSize to width of (its |menu|'s |size| as record)
+			if pullDown then set theSize to theSize + 10 -- adjust for checkmark space
+			its setFrameSize:{theSize, 25}
+		end if
 		return it
 	end tell
 end makePopupButton
 
 
 # Perform an action when the connected popup button is pressed.
-# also see selectedItem, titleOfSelectedItem, indexOfSelectedItem
 on popupButtonAction:sender
-	display dialog "Popup button menu item '" & (sender's titleOfSelectedItem as text) & "' selected." buttons {"OK"} default button 1
+	set selected to sender's titleOfSelectedItem as text
+	if (sender's pullsDown as boolean) then -- for pull-down
+		sender's setTitle:selected -- synchronizeTitleAndSelectedItem doesn't want to work
+		sender's sizeToFit() -- sized according to the title
+	end if
+	display dialog "Popup button menu item '" & selected & "' selected." buttons {"OK"} default button 1
 	-- whatever
 end popupButtonAction:
 
