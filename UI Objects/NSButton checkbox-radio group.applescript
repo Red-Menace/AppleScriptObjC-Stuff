@@ -19,6 +19,7 @@ log (getGroupButtons from buttonGroup)
 # The image position is assumed to be to the left of the title (default).
 on makeButtonGroup at origin given radio:radio : true, boxWidth:boxWidth : 100, itemList:itemList : {}, title:title : "", titlePosition:titlePosition : 0, lineBreakMode:lineBreakMode : 5, baseTag:baseTag : missing value, action:action : "buttonGroupAction:", target:target : missing value
 	set {buttonHeight, padding, tag} to {24, 15, missing value}
+	if boxWidth is in {0, false, missing value} then set boxWidth to 0
 	set boxHeight to (count itemList) * buttonHeight + padding
 	if titlePosition is not 0 then set boxHeight to boxHeight + 12 -- box + default label height
 	set theBox to current application's NSBox's alloc's initWithFrame:{origin, {boxWidth, boxHeight}}
@@ -38,7 +39,8 @@ end makeButtonGroup
 # Make an individual checkbox or radio button - the state will be on if the name ends with a return.
 # When called by the makeButtonGroup handler, the button width is (re)set relative to the containing box.
 # The image position is to the left of the title (default), other positions are left up to the user.
-to makeGroupButton at origin given radio:radio : true, width:width : 100, buttonName:buttonName : "Button", lineBreakMode:lineBreakMode : 5, tag:tag : missing value, action:action : "buttonGroupAction:", target:target : missing value
+to makeGroupButton at origin given radio:radio : true, controlSize:controlSize : 0, width:width : 0, buttonName:buttonName : "Button", lineBreakMode:lineBreakMode : 5, tag:tag : missing value, action:action : "buttonGroupAction:", target:target : missing value
+	if width is in {0, false, missing value} then set width to 0
 	if action is not missing value and target is missing value then set target to me
 	if radio then
 		set button to current application's NSButton's radioButtonWithTitle:"" target:target action:(action as text)
@@ -51,8 +53,10 @@ to makeGroupButton at origin given radio:radio : true, width:width : 100, button
 		set buttonName to text 1 thru -2 of buttonName
 	end if
 	button's setTitle:buttonName
+	button's setControlSize:controlSize -- 0-3 or NSControlSize enum
 	button's setFrame:{origin, {width, 24}}
 	button's setLineBreakMode:lineBreakMode
+	if width is 0 then button's sizeToFit()
 	if tag is not missing value then button's setTag:tag
 	if action is not missing value then
 		if target is missing value then set target to me -- 'me' can't be used as an optional default
