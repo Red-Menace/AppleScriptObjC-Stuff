@@ -145,7 +145,7 @@ script AlertController
 			alert's setAlertStyle:(current application's NSInformationalAlertStyle)
 		else -- from a file
 			set iconImage to current application's NSImage's alloc's initByReferencingFile:(icon as text)
-			if (iconImage's isValid as boolean) then set alert's icon to iconImage
+			if (iconImage is not missing value) and (iconImage's isValid as boolean) then set alert's icon to iconImage
 		end if
 	end setIcon
 	
