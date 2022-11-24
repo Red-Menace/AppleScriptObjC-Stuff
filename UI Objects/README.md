@@ -45,6 +45,9 @@ Handlers include the following objects/classes:
 * NSPathControl
 * NSPopover
 * NSPopUpButton
+* NSProgressIndicator
+    * Simple bar/spinner indicator
+    * Controller script/class (combined indicator with text fields and cancel button)
 * NSTextField (includes NSSecureTextField)
 * NSWindow-NSPanel
 
