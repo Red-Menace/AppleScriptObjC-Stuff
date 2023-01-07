@@ -21,7 +21,7 @@ A few simple ASObjC scripts demonstrating the usage of various Cocoa classes.  T
 These are also examples using AppleScriptObjC, but use other Cocoa classes that can be run directly from the **Script Editor** or **Script Debugger** without any main thread issues.  
 
 
-* OverlayImage - overlay one image over another.  Default images used are from system resources.
+* OverlayImage - overlay one image over another.  The example puts an image or application icon onto a copy of the system's generic folder icon.
 	* NSData, NSImage, NSBitmapImageRep
 * tags - a set of handlers in an example that adds or removes file tags.
 	* NSOrderedSet, NSURL, NSDictionary
