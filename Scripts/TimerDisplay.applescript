@@ -14,7 +14,7 @@ property timer : missing value -- a repeating timer (for updating elapsed time)
 property updateInterval : 1 -- time between updates (seconds)
 property colorIntervals : {30, 60} -- green>yellow and yellow>red color change intervals (seconds)
 
-global elapsed, paused -- total elapsed time and a flag to pause the timer update
+global elapsed, |paused| -- total elapsed time and a flag to pause the timer update
 global titleFont
 global greenColor, yellowColor, redColor
 
@@ -30,7 +30,7 @@ end run
 to setup() -- set stuff up and start timer
 	try
 		set elapsed to 0
-		set paused to true
+		set |paused| to true
 		
 		# font and colors
 		set titleFont to current application's NSFont's fontWithName:"Courier New Bold" |size|:16 -- boldSystemFontOfSize:14
@@ -129,12 +129,12 @@ end updateElapsed:
 on startStop:sender -- start or stop the timer
 	set itemTitle to sender's title as text
 	if itemTitle is "Start" then
-		set paused to false
+		set |paused| to false
 		sender's setTitle:"Stop"
 		my reset:(missing value)
 		(timerMenu's itemAtIndex:1)'s setEnabled:true
 	else -- stop
-		set paused to true
+		set |paused| to true
 		sender's setTitle:"Start"
 		(timerMenu's itemAtIndex:1)'s setEnabled:false
 		(timerMenu's itemAtIndex:1)'s setTitle:"Pause"
@@ -144,10 +144,10 @@ end startStop:
 on pauseContinue:sender -- pause or continue the timer
 	set itemTitle to sender's title as text
 	if itemTitle is "Pause" then
-		set paused to true
+		set |paused| to true
 		sender's setTitle:"Continue"
 	else
-		set paused to false
+		set |paused| to false
 		sender's setTitle:"Pause"
 	end if
 end pauseContinue:

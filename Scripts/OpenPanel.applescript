@@ -4,10 +4,10 @@ use framework "Cocoa"
 use scripting additions
 
 # initial checkbox button properties
-property buttonList : [Â
-	{title:"Select Folders", frame:[{5, 5}, {120, 20}], selector:"canChooseDirectories", value:true}, Â
-	{title:"Select Files", frame:[{5, 30}, {150, 20}], selector:"canChooseFiles", value:true}, Â
-	{title:"Show Packages", frame:[{150, 5}, {120, 20}], selector:"treatsFilePackagesAsDirectories", value:false}, Â
+property buttonList : [Â¬
+	{title:"Select Folders", frame:[{5, 5}, {120, 20}], selector:"canChooseDirectories", value:true}, Â¬
+	{title:"Select Files", frame:[{5, 30}, {150, 20}], selector:"canChooseFiles", value:true}, Â¬
+	{title:"Show Packages", frame:[{150, 5}, {120, 20}], selector:"treatsFilePackagesAsDirectories", value:false}, Â¬
 	{title:"Show Hidden", frame:[{150, 30}, {120, 20}], selector:"showsHiddenFiles", value:false}]
 
 property defaultDirectory : POSIX path of (path to desktop) -- a place to start
@@ -27,13 +27,13 @@ end open
 
 on initialize() -- set stuff up when first run
 	if setup is not missing value then return
-	set newer to (system attribute "sys2") ³ 12 -- system version
+	set newer to (system attribute "sys2") â‰¥ 12 -- system version
 	set mainMenu to current application's NSApplication's sharedApplication's mainMenu
 	set fileMenu to (mainMenu's itemAtIndex:1)'s submenu
-	set openItem to fileMenu's indexOfItemWithTitle:"OpenÉ"
-	if openItem as integer is -1 then -- no "OpenÉ" menuItem, so add one to the app
-		set menuItem to current application's NSMenuItem's alloc's Â
-			initWithTitle:"OpenÉ" action:"performPanel:" keyEquivalent:"o"
+	set openItem to fileMenu's indexOfItemWithTitle:"Openâ€¦"
+	if openItem as integer is -1 then -- no "Openâ€¦" menuItem, so add one to the app
+		set menuItem to current application's NSMenuItem's alloc's Â¬
+			initWithTitle:"Openâ€¦" action:"performPanel:" keyEquivalent:"o"
 		menuItem's setTarget:me
 		fileMenu's addItem:menuItem
 	end if

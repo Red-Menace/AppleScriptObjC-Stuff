@@ -246,7 +246,7 @@ end buttonAccessory:width:radio:
 # items ending with a return are selected (state = 1)
 # old and new Cocoa NSButton APIs are included
 to makeButton(radio, label)
-	if (system attribute "sys2") ³ 12 then -- use newer API
+	if (system attribute "sys2") â‰¥ 12 then -- use newer API
 		if radio then
 			set button to current application's NSButton's radioButtonWithTitle:"" target:me action:"no_op:"
 		else
@@ -296,7 +296,7 @@ end setupTimer:
 # Update the countdown timer display.
 to updateCountdown:timer
 	set countdown to countdown - 1
-	if countdown ² 0 then -- stop and reset for next time
+	if countdown â‰¤ 0 then -- stop and reset for next time
 		timer's invalidate()
 		set timer to missing value
 		set timerField to missing value
