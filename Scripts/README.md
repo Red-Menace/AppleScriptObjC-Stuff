@@ -25,6 +25,8 @@ These are also examples using AppleScriptObjC, but use other Cocoa classes that 
 	* NSData, NSImage, NSBitmapImageRep
 * tags - a set of handlers in an example that adds or removes file tags.
 	* NSOrderedSet, NSURL, NSDictionary
+* FinderTags - gets all of the Finder's tags and their label colors.  Works with old and new plist locations (uses the `sqlite3` shell utility to read the database in current OS versions).
+    * NSDictionary, NSData, NSPropertyListSerialization
 * whereFroms - a set of handlers in an example that adds or removes the file whereFrom attribute.
 	* NSOrderedSet, NSString, NSPropertyListSerialization
 
