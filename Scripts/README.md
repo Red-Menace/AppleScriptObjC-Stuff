@@ -27,6 +27,8 @@ These are also examples using AppleScriptObjC, but use other Cocoa classes that 
 	* NSOrderedSet, NSURL, NSDictionary
 * FinderTags - gets all of the Finder's tags and their label colors.  Works with old and new plist locations (uses the `sqlite3` shell utility to read the database in current OS versions).
     * NSDictionary, NSData, NSPropertyListSerialization
+* JSON - conversion of a list/record to/from a JSON string.
+    * NSData, NSJSONSerialization, NSError
 * whereFroms - a set of handlers in an example that adds or removes the file whereFrom attribute.
 	* NSOrderedSet, NSString, NSPropertyListSerialization
 
