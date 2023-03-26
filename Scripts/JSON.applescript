@@ -44,8 +44,7 @@ end parseJSON
 
 
 # Generate a JSON string for a list or record.
-to generateJSON for someObject
-	if class of someObject is not in {list, record} then error "generateJSON error: top level type is not a list or record"
+to generateJSON for someObject -- someObject needs to be a list, record, or objC equivalent
 	set {theData, anyError} to current application's NSJSONSerialization's dataWithJSONObject:someObject options:(current application's NSJSONWritingPrettyPrinted) |error|:(reference)
 	if theData is missing value then error "generateJSON error: " & (anyError's userInfo's objectForKey:"NSDebugDescription")
 	set JSONString to current application's NSString's alloc()'s initWithData:theData encoding:(current application's NSUTF8StringEncoding)
