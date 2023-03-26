@@ -50,6 +50,7 @@ Handlers include the following objects/classes:
     * Controller script/class (combined indicator with text fields and cancel button)
 * NSSlider-NSLevelIndicator
 * NSTextField (includes NSSecureTextField)
+* NSTextView (includes NSScrollView and wrapping)
 * NSWindow-NSPanel
 
 The NSAlert, NSWindow, and Open/Save panel scripts include a run handler, so they can also be used for testing and laying out UI items.
