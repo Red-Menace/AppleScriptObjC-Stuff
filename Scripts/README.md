@@ -7,10 +7,10 @@ A few simple ASObjC scripts demonstrating the usage of various Cocoa classes.  T
 	* NSApplication, NSOpenPanel, NSMenu, NSBox, NSButton, NSDictionary
 * *Sheets - shows an alert sheet (with a help sheet) over the main window.  ASObjC does not support blocks, so you are limited to the (somewhat buggy) deprecated method.  There are some third-party Objective-C categories supporting completionHandler blocks available for use in an Xcode project.
 	* NSWindow, NSAlert, NSButton
-* *StatusBarTimer - a status bar menu item showing the time that a specified application is active.
-	* NSStatusBar, NSMenu, NSWorkspace notifications, NSTimer, NSMutableAttributedString, NSDictionary, NSFont, NSColor.
-* *TimerDisplay - similar to StatusbarTimer, but displays a general-purpose timer in a floating window and / or a status bar menu item.
+* *TimerDisplay - displays a general-purpose timer in a floating window and / or a status bar menu item.
 	* NSWindow, NSStatusBar, NSMenu, NSTimer, NSTextField, NSMutableAttributedString, NSDictionary, NSFont, NSColor.
+* *MenuBar Timer - similar to TimerDisplay, but provides a menu bar status item countdown timer with adjustable times and alarm sounds/scripts.
+    * NSStatusBar, NSMenu with submenus, NSTimer, NSUserDefaults, NSMutableAttributedString, NSSound.
 * *AlertLib - an NSAlert library.  Performs an NSAlert with optional TextField, ComboBox, CheckBox, or RadioButton accessory views.  Can be used as a script library.
 	* NSAlert, NSTextField, NSSecureTextField, NSComboBox, NSButton, NSTimer, NSBox, NSMutableDictionary, NSImage.
 * *Popover - shows a popover at a button when it is clicked.
