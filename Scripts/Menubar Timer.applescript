@@ -1,10 +1,9 @@
 
 #
 # Provides a menu bar status item countdown timer with adjustable times and alarm sounds.
-# Sound names are from the various Sound libraries, but must be .aiff audio files.
-# A user script can also be run when the countdown reaches 0 - scripts should be tested with the timer app to pre-approve any permissions.  A sandboxed app would use NSApplicationScriptsDirectory and NSUserScriptTask, this uses a regular choose file dialog and osascript.
-# Save as a stay-open application, and code sign or make the script read-only to keep accessibility permissions.
-# Add a LSUIElement key to the application's Info.plist to make an agent (no app menu or dock tile).
+# Sound names are from the various Sound libraries, and must be .aiff audio files.
+# A user script can also be run when the countdown reaches 0 - scripts should be tested with the timer app to pre-approve any permissions.  A sandboxed app would use NSApplicationScriptsDirectory and NSUserScriptTask, but this uses a regular choose file dialog and osascript.
+# Save as a stay-open application for features such as preferences (NSUserDefaults) and Info.plist settings such as LSUIElement (to make the app an agent with no menu or dock tile).  Code sign the app or make the script in the bundle read-only to keep accessibility permissions.
 #
 
 
