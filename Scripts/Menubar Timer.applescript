@@ -107,11 +107,11 @@ end performAction
 to readDefaults()
 	tell standardUserDefaults() of current application's NSUserDefaults
 		its registerDefaults:{alarmSetting:alarmSetting, colorIntervals:colorIntervals, countdownTime:countdownTime, timeSetting:timeSetting, userScript:userScript}
-		tell (its valueForKey:"AlarmSetting") to if it is not missing value then set my alarmSetting to (it as text)
-		tell (its valueForKey:"Intervals") to if it is not missing value then set my colorIntervals to (it as list)
-		tell (its valueForKey:"Countdown") to if it is not missing value then set my countdownTime to (it as integer)
-		tell (its valueForKey:"TimeSetting") to if it is not missing value then set my timeSetting to (it as text)
-		tell (its valueForKey:"ScriptPath") to if it is not missing value then set my userScript to (it as text)
+		tell (its objectForKey:"AlarmSetting") to if it is not missing value then set my alarmSetting to (it as text)
+		tell (its objectForKey:"Intervals") to if it is not missing value then set my colorIntervals to (it as list)
+		tell (its objectForKey:"Countdown") to if it is not missing value then set my countdownTime to (it as integer)
+		tell (its objectForKey:"TimeSetting") to if it is not missing value then set my timeSetting to (it as text)
+		tell (its objectForKey:"ScriptPath") to if it is not missing value then set my userScript to (it as text)
 	end tell
 end readDefaults
 
