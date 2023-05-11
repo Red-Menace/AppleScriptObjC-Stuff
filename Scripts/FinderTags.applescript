@@ -65,8 +65,8 @@ to getTagInfo for option --  "dict", "name", "index", "combo", "attr"
 	else if option is in {"combo", "attr"} then -- a list of the tag names with their colors
 		set combo to {}
 		repeat with theRecord in (tagDict's valueForKeyPath:keyPath)
-			set theName to (theRecord's valueForKey:"n") as text
-			set theColor to (theRecord's valueForKey:"l")
+			set theName to (theRecord's objectForKey:"n") as text
+			set theColor to (theRecord's objectForKey:"l")
 			if theColor is missing value then set theColor to ""
 			if option is "attr" then -- name and color index as xattr attribute
 				if theColor is not "" then set theColor to linefeed & theColor
