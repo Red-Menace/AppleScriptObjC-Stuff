@@ -18,7 +18,7 @@ to makeBox at origin given dimensions:dimensions : {10, 20}, boxType:boxType : m
 	tell (current application's NSBox's alloc's initWithFrame:{origin, dimensions})
 		if boxType is not missing value then its setBoxType:boxType -- NSBoxSeparator (2) or NSBoxCustom (4)
 		if title is not in {"", missing value} then its setTitle:title
-		its setTitlePosition:titlePosition -- NSTitlePosition enum
+		its setTitlePosition:titlePosition -- 0-6 or NSTitlePosition enum
 		if titleFont is not missing value then its setTitleFont:titleFont
 		if (boxType as integer) is 4 then -- only applies to NSBoxCustom
 			if borderColor is not missing value then its setBorderColor:borderColor
