@@ -233,8 +233,12 @@ to setCustomTime:sender -- get number of seconds for countdown
 	repeat
 		try
 			activate me
-			set theSeconds to text returned of (display dialog "The current countdown time is " & formatTime(countdownTime) & " (hh:mm:ss)" & return & errorText & return & "Enter a new countdown time (or expression) in seconds:" default answer "" & countdownTime with title "Set Countdown Time")
-			set theSeconds to (run script theSeconds) as integer
+			set input to text returned of (display dialog "The current countdown time is " & formatTime(countdownTime) & " (hh:mm:ss)" & return & errorText & return & "Enter a new countdown time (or expression) in seconds:" default answer "" & countdownTime with title "Set Countdown Time")
+			if validate(input) then
+				set theSeconds to (run script input) as integer
+			else
+				error "not a valid time expression"
+			end if
 			setCountdownTime(theSeconds)
 			(timeMenu's itemWithTitle:timeSetting)'s setState:(current application's NSControlStateValueOff) -- old
 			set my timeSetting to "Custom Time"
@@ -242,7 +246,7 @@ to setCustomTime:sender -- get number of seconds for countdown
 			exit repeat
 		on error errmess number errnum
 			if errnum is -128 then exit repeat
-			set errorText to "--> the entry must be a valid AppleScript expression"
+			set errorText to "--> the entry must be a valid AppleScript time expression"
 		end try
 	end repeat
 end setCustomTime:
@@ -380,6 +384,18 @@ to setCountdownTime(theSeconds) -- set the countdown time
 	statusItem's button's setTitle:formatTime(countdownTime)
 	my startStop:(missing value)
 end setCountdownTime
+
+to validate(timeExpr) -- validate time expression
+	try
+		repeat with aWord in (words of timeExpr)
+			if aWord is not in {"hours", "minutes", "+"} then aWord as integer
+		end repeat
+		return true
+	on error errmess -- nope
+		-- log errmess
+		return false
+	end try
+end validate
 
 on oops(theHandler, errmess, errnum) -- common error dialog
 	activate me
