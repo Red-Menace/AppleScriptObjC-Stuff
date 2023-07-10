@@ -310,9 +310,16 @@ to startStop:sender -- start or stop the timer
 		(statusMenu's itemAtIndex:0)'s setTitle:"Stop Countdown"
 		(statusMenu's itemAtIndex:1)'s setEnabled:true
 		my reset:(missing value)
+		if alarmSetting is "Run Script" then
+			tell application "System Events" to set scriptName to (get name of disk item userScript)
+			set noteText to "Run Script: " & scriptName
+		else
+			set noteText to alarmSetting
+		end if
+		display notification "Countdown started from " & formatTime(countdownTime) & " with alarm " & quoted form of noteText with title "Menubar Timer"
 	else -- stop timer
 		set |paused| to true
-		alarmSound's |stop|()
+		if alarmSound is not missing value then alarmSound's |stop|()
 		(statusMenu's itemAtIndex:0)'s setTitle:"Start Countdown"
 		(statusMenu's itemAtIndex:1)'s setEnabled:false
 		(statusMenu's itemAtIndex:1)'s setTitle:"Pause"
