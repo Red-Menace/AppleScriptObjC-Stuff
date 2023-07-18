@@ -15,10 +15,11 @@ mainWindow's contentView's addSubview:imageView
 
 
 # Make and return an NSImageView.
-to makeImageView at origin given dimensions:dimensions : {200, 200}, bezel:bezel : false, scaling:scaling : missing value, editable:editable : true, cutCopyPaste:cutCopyPaste : false, action:action : "imageAction:", target:target : missing value
+to makeImageView at origin given dimensions:dimensions : {200, 200}, bezel:bezel : false, scaling:scaling : missing value, autoresizingMask:autoresizingMask : missing value, editable:editable : false, cutCopyPaste:cutCopyPaste : false, action:action : missing value, target:target : missing value
 	tell (current application's NSImageView's alloc()'s initWithFrame:{origin, dimensions})
 		if bezel is true then its setImageFrameStyle:(current application's NSImageFrameGrayBezel)
 		if scaling is not missing value then its setImageScaling:scaling
+		if autoresizingMask is not missing value then its setAutoresizingMask:autoresizingMask
 		if editable is not false then its setEditable:true
 		if cutCopyPaste is not false then its setAllowsCutCopyPaste:true
 		if action is not missing value then
@@ -45,5 +46,16 @@ end imageAction:
 # NSImageScaleAxesIndependently = 1
 # NSImageScaleNone = 2
 # NSImageScaleProportionallyUpOrDown = 3
+#
+
+# 
+# NSAutoresizingMaskOptions (for combinations, add mask values together):
+# NSViewNotSizable = 0
+# NSViewMinXMargin = 1
+# NSViewWidthSizable = 2
+# NSViewMaxXMargin = 4
+# NSViewMinYMargin = 8
+# NSViewHeightSizable = 16
+# NSViewMaxYMargin = 32
 #
 
