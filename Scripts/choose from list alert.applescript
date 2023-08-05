@@ -2,53 +2,49 @@
 #
 # NSAlert with tableView to approximate "choose from list"
 #
-# A NSWindow/NSPanel can also be used, but there is a bit more layout for the UI, and deprecated methods
-# need to be used to run it modally (current APIs uses blocks, which are not supported by ASObjC).
-#
 # Features:
 #	The number of list entries to be shown can be specified so that the dialog won't fill the window
-#		a setting of 0 or missing value will auto set, up to a maximum (a scroll bar is shown as needed)
-#	The width can be specified (it will be clamped between the minimum and maximum)
-#		a setting of 0 or missing value will auto set to the longest string, up to the maximum
-#		the middle is truncated if a string is longer than the width (a tooltip will show the full string)
-#		the width is for the accessory view (the alert is sized for the accessory view, and includes borders)
-#	The location (lower left) of the alert dialog can be specified (adjusted if the alert will be off the screen)
+#		a setting of 0 or missing value will show all, up to the maximum (a scroll bar is shown as needed)
+#	The accessory view width can be specified (it will be clamped between the minimum and maximum)
+#		a setting of 0 or missing value will adjust to the longest string, up to the maximum
+#		the string is truncated if it is longer than the width (a tooltip will show the full string)
+#	The (top left) location of the alert dialog can be specified (adjusted to keep the entire alert on the screen)
 #	Clicking the column header (if used) will select all rows
 #	NSAttributedStrings are used to set fonts and font traits, colors, paragraph styles, etc
 #
-
 
 use AppleScript version "2.5" -- 10.12 Sierra and later for newer enumerations
 use framework "Foundation"
 use scripting additions
 
+
 # alert and table view properties
 property dataSource : missing value -- this will be the data (an array of dictionaries) for the tableView
 property columnKey : "listItem" -- dictionary key for the column
 property minWidth : 220 -- accessory view minimum width (based on alert minimum width)
-property maxWidth : 720 -- accessory view maximum width (based on alert maximum width)
+property maxWidth : 720 -- accessory view maximum width
 property rowHeight : 18 -- height of the table view rows
-property maxEntries : 25 -- maximum number of table view rows shown (arbitrary)
+property maxShown : 25 -- maximum number of table view rows shown
 
 global choices -- a list (including empty) of the item(s) chosen, or missing value for cancel
 
 
-on run -- UI items need to be run on the main thread
+on run -- example
 	set choices to missing value
-	if current application's NSThread's isMainThread() as boolean then
+	if current application's NSThread's isMainThread() as boolean then -- UI items need to be run on the main thread
 		doStuff()
-	else
+	else -- note that performSelector does not return anything
 		my performSelectorOnMainThread:"doStuff" withObject:(missing value) waitUntilDone:true
 	end if
-	return choices -- note that performSelector does not return anything
+	return choices
 end run
 
 # Do the alert stuff.
 to doStuff()
 	try
-		set listItems to {"First", "Peach", "Strawberry", "Pear", "Apple", "A much longer item entry to view the result of the attributed string linebreak setting (remove to use the other shorter items)", "Grape", "Orange", "Banana", "Cherry", "Tomato", "Last"}
-		(choose from list listItems with multiple selections allowed and empty selection allowed) -- for comparison
-		set choices to (choose from listItems) --  given width:400, entries:5) -- given arguments are optional
+		set listItems to {"First", "Peach", "Strawberry", "Pear", "Apple", "A much longer item entry to view the result of the attributed string linebreak setting (remove to use width of other items)", "Grape", "Orange", "Banana", "Cherry", "Tomato", "Last"}
+		# log (choose from list listItems with title "Standard 'Choose from List'" with multiple selections allowed and empty selection allowed) -- for comparison
+		set choices to (choose from listItems given width:400, entries:5, info:"Alert 'Choose from List'", location:{0, 0}) -- given arguments are optional
 	on error errmess number errnum
 		display alert "Error " & errnum message errmess
 	end try
@@ -67,11 +63,10 @@ to choose from choiceList given prompt:prompt : "Please make your selection:", i
 		its (|window|'s setAutorecalculatesKeyViewLoop:true)
 		its setAccessoryView:accessory
 		its (|window|'s setInitialFirstResponder:accessory)
-		if location is not in {false, missing value} then -- add window in order to move, then continue
+		if location is not in {false, missing value} then -- show window in order to move it, then continue
 			its layout()
-			set location to my checkFrame(second item of ((its |window|'s frame) as list), location) -- make it fit
 			its (|window|'s orderBack:me)
-			its (|window|'s setFrameOrigin:location)
+			its (|window|'s setFrameTopLeftPoint:(my adjust(location, item 2 of (its |window|'s frame as list))))
 			its |window|'s recalculateKeyViewLoop()
 		end if
 		return my getChoices(it, choiceArray)
@@ -102,7 +97,7 @@ to makeScrollingTableView under header given width:width : 0, entries:entries : 
 	set width to clamp(minWidth, width, maxWidth)
 	if entries is 0 then set entries to (count dataSource) -- auto
 	set entries to clamp(1, entries, (count dataSource))
-	set height to entries * rowHeight
+	set height to clamp(1, entries, maxShown) * rowHeight
 	if multipleSelections is not false then set multipleSelections to true
 	set tableView to makeTableView(current application's NSMakeRect(0, 0, width + 17, height), multipleSelections)
 	tell (current application's NSTableColumn's alloc()'s initWithIdentifier:columnKey)
@@ -133,6 +128,7 @@ to makeTableView(frame, multiple)
 			its setAllowsColumnSelection:true
 		end if
 		its setAllowsEmptySelection:true
+		its setDelegate:me -- for the tableView delegate handlers
 		its setDataSource:me -- for the dataSource handlers
 		return it
 	end tell
@@ -154,7 +150,7 @@ end makeScrollView
 # Returns a NSArray of the original tableItems for use in getting the selected indexes.
 to makeDataSource for tableItems
 	tell current application's NSMutableArray's alloc()'s init()
-		repeat with anItem in tableItems -- build an array of dictionaries for the columns of each row		
+		repeat with anItem in tableItems -- build an array of dictionaries for the rows
 			set dict to current application's NSMutableDictionary's alloc's init()
 			(dict's setObject:(my (makeAttributedString for anItem)) forKey:columnKey)
 			(its addObject:dict)
@@ -182,24 +178,26 @@ to makeAttributedString for someText given lineBreakMode:lineBreakMode : 5, trai
 	end tell
 end makeAttributedString
 
-# Adjust dialog origin to fit the screen with the menu bar.
-to checkFrame(alertSize, location)
-	set screenSize to second item of (((current application's NSScreen's screens)'s objectAtIndex:0)'s frame as list)
-	set first item of location to clamp(0, first item of location, (first item of screenSize) - (first item of alertSize))
-	set second item of location to clamp(0, second item of location, (second item of screenSize) - (second item of alertSize))
-	return location
-end checkFrame
+# Adjust the alert top left point to fit the screen with the menu bar.
+to adjust(location, alertSize)
+	set {width, height} to item 2 of (((current application's NSScreen's screens)'s objectAtIndex:0)'s frame as list)
+	tell location
+		set item 1 to (my clamp(0, item 1, width - (item 1 of alertSize)))
+		set item 2 to height - (my clamp(0, item 2, height - (item 2 of alertSize))) -- flip vertical
+		return it
+	end tell
+end adjust
 
-# Clamps a value between min and max.
-to clamp(min, obj, max)
-	if obj < min then return min
-	if obj > max then return max
-	return obj
+# Clamp a value between a minimum and maximum.
+to clamp(min, value, max)
+	if value < min then return min
+	if value > max then return max
+	return value
 end clamp
 
 
 ##################################################
-#	Required tableView dataSource handlers
+#	Required dataSource handlers
 ##################################################
 
 on numberOfRowsInTableView:sender
@@ -210,6 +208,15 @@ on tableView:sender objectValueForTableColumn:column row:row
 	set dict to dataSource's objectAtIndex:row
 	return dict's valueForKey:(column's identifier)
 end tableView:objectValueForTableColumn:row:
+
+
+##################################################
+#	Delegate handlers
+##################################################
+
+on tableView:tableView shouldEditTableColumn:column row:row
+	return false
+end tableView:shouldEditTableColumn:row:
 
 
 #
