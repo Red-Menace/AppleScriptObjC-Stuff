@@ -143,6 +143,8 @@ script AlertController
 			alert's setAlertStyle:(current application's NSCriticalAlertStyle)
 		else if icon is in {"informational", "warning"} then
 			alert's setAlertStyle:(current application's NSInformationalAlertStyle)
+		else if icon is "caution" then
+			set alert's icon to current application's NSImage's imageNamed:(current application's NSImageNameCaution)
 		else -- from a file
 			set iconImage to current application's NSImage's alloc's initByReferencingFile:(icon as text)
 			if (iconImage is not missing value) and (iconImage's isValid as boolean) then set alert's icon to iconImage
