@@ -49,6 +49,7 @@ end makeScrollView
 
 # (re)set a wrapping mode for the given textView.
 # The horizontal scroller is set as needed.
+# Note that there needs to be a run loop to update the UI if dynamically changing the wrap mode.
 to setWrapMode for textView given wrapping:wrapping : true
 	if textView is missing value then return missing value
 	if wrapping is true then -- wrap at textView width
