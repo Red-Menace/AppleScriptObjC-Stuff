@@ -4,7 +4,7 @@ use framework "Foundation"
 use scripting additions
 
 
-(* example:
+(* NSTextView example:
 property mainWindow : missing value -- globals can also be used
 property textView : missing value
 property scrollView: missing value
@@ -12,8 +12,7 @@ property scrollView: missing value
 set loremText to "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque vestibulum venenatis velit, non commodo diam pretium sed. Etiam viverra erat a lacus molestie id euismod magna lacinia. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Vestibulum ac augue magna, eu pharetra leo. Donec tortor tortor, tristique in ornare nec, feugiat vel justo. Nunc iaculis interdum pellentesque. Quisque vel rutrum nibh. Phasellus malesuada ipsum quis diam ullamcorper rutrum. Nullam tincidunt porta ante, in aliquet odio molestie eget. Donec mollis, nibh euismod pulvinar fermentum, magna nunc consectetur risus, id dictum odio leo non velit. Vestibulum vitae nunc pulvinar augue commodo sollicitudin."
 
 set my textView to makeTextView at {20, 50} given dimensions:{350, 80}, textString:loremText -- given arguments are optional
-set my scrollView to makeScrollView for textView -- embed textView into scrollView
-setWrapMode for textView with wrapping -- wrap lines at textView width (or not)
+set my scrollView to makeScrollView for textView with wrapping -- embed textView into scrollView
 
 mainWindow's contentView's addSubview:scrollView
 *)
@@ -36,14 +35,14 @@ to makeTextView at origin given dimensions:dimensions : {200, 28}, textString:te
 end makeTextView
 
 # Make and return an NSScrollView for the given textView.
-to makeScrollView for textView given borderType:borderType : missing value, verticalScroller:verticalScroller : false
+to makeScrollView for textView given borderType:borderType : missing value, verticalScroller:verticalScroller : true, wrapping:wrapping : true
 	if textView is missing value then return missing value
 	tell (current application's NSScrollView's alloc's initWithFrame:(textView's frame))
 		its setAutoresizingMask:(((current application's NSViewWidthSizable) as integer) + ((current application's NSViewHeightSizable) as integer))
 		if borderType is not missing value then its setBorderType:borderType -- 0-3 or NSBorderType enum
 		if verticalScroller is not in {false, missing value} then its setHasVerticalScroller:true
-		if hidingScrollers is not in {false, missing value} then its setAutohidesScrollers:true
 		its setDocumentView:textView
+		my (setWrapMode for textView given wrapping:wrapping)
 		return it
 	end tell
 end makeScrollView
@@ -53,7 +52,10 @@ end makeScrollView
 to setWrapMode for textView given wrapping:wrapping : true
 	if textView is missing value then return missing value
 	if wrapping is true then -- wrap at textView width
-		set layoutSize to current application's NSMakeSize(first item of (textView's enclosingScrollView's contentSize() as list), 1.0E+4)
+		set theSize to (textView's enclosingScrollView's contentSize) as list -- NSSize coercion is a bit buggy
+		set theWidth to width of first item of theSize
+		# set theWidth to first item of second item of (textView's frame as list) -- alternate
+		set layoutSize to current application's NSMakeSize(theWidth, 1.0E+4)
 		textView's enclosingScrollView's setHasHorizontalScroller:false
 		textView's textContainer's setWidthTracksTextView:true
 	else -- no wrapping
