@@ -1,4 +1,9 @@
 
+use AppleScript version "2.8" -- Monterey (12.0) and later
+use framework "Foundation"
+use scripting additions
+
+
 (* NSComboButton example:
 property mainWindow : missing value -- globals can also be used
 property comboButton : missing value
