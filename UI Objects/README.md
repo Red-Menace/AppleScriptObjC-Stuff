@@ -38,6 +38,7 @@ Handlers include the following objects/classes:
 * NSButton
     * Push Buttons
     * CheckBox and Radio buttons (individual and grouped in a box)
+* NSComboButton
 * NSComboBox
 * NSImageView
 * NSMenu (including submenus)
