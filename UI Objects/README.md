@@ -4,7 +4,7 @@ A collection of handlers for creating various UI objects in a Cocoa-AppleScript 
 
 Handlers can be mixed and matched as desired, for example an `NSBox` can be populated with some checkboxes and used as an accessory view in a panel or alert, or a menu can be created for a floating window.
 
-Note that controls need to be be used in a modal dialog or stay-open application (also from a `performSelectorOnMainThread:withObject:waitUntilDone:true`) in order to see any changes (accessory view, etc).  Even though the control may remain when used in a Script Editor, the script will finish executing and won't see any changes. 
+Note that many controls need to be be used in a run loop (such as in a stay-open application) or modal dialog (also from a `performSelectorOnMainThread:withObject:waitUntilDone:true`) in order to see any UI changes.  For example, while a control may remain when used in a Script Editor, the script will have finished executing so changes may not update properties, the log, or the UI. 
 
 The handlers use labels for given arguments so that they can be optional, and include a default value.  An AppleScript defined label is used for the first user parameter name so the others can be skipped as desired, for example:
 
@@ -31,29 +31,30 @@ Note that when calling a handler, any boolean handler arguments will be rearrang
 ----
 Handlers include the following objects/classes:
 
-* NSAlert
+* NSAlert †
   * Simple
   * Extended with text field font/color, giveup timer, and accessory view support
 * NSBox
 * NSButton
     * Push Buttons
     * CheckBox and Radio buttons (individual and grouped in a box)
-* NSComboButton
 * NSComboBox
+* NSComboButton
 * NSImageView
 * NSMenu (including submenus)
-* NSOpenPanel-NSSavePanel
+* NSOpenPanel-NSSavePanel †
 * NSPathControl
 * NSPopover
 * NSPopUpButton
-* NSProgressIndicator
+* NSProgressIndicator †
     * Simple bar/spinner indicator
     * Controller script/class (combined indicator with text fields and cancel button)
 * NSSlider-NSLevelIndicator
-* NSStatusItem
+* NSStatusItem †
 * NSTextField (includes NSSecureTextField)
 * NSTextView (includes NSScrollView and wrapping)
-* NSWindow-NSPanel
+* NSWindow-NSPanel †
 
-The NSAlert, NSWindow, and Open/Save panel scripts include a run handler, so they can also be used for testing and laying out UI items.
+
+† These scripts include a run handler so that they can also be used for testing and laying out UI items.
 
