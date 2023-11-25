@@ -7,51 +7,14 @@ use scripting additions
 (* NSButton example:
 property mainWindow : missing value -- globals can also be used
 property button : missing value
-property switch : missing value
 
 set my button to makeButton at {50, 50} given title:"This is a long button title", titleFont:(current application's NSFont's fontWithName:"Noteworthy Bold" |size|:12) -- given arguments are optional
 button's setRefusesFirstResponder:true -- as desired
 mainWindow's contentView's addSubview:button
-
-set my switch to makeSwitch at {50, 90} given tag:5 -- given arguments are optional
-mainWindow's contentView's addSubview:switch
-
 *)
 
 
-# Make and return an NSSwitch (available since 10.15 Catalina)
-# This operates similar to a checkbox, but using it in lists or tables is not recommended.
-# A label should also be added, as the control has no title of its own.
-to makeSwitch at origin given controlSize:controlSize : 0, state:state : 0, tag:tag : missing value, action:action : "switchAction:", target:target : missing value
-	tell (current application's NSSwitch's alloc's initWithFrame:{origin, {42, 25}}) -- just size for largest
-		its setControlSize:controlSize -- 0-2 or NSControlSize enum
-		if tag is not missing value then its setTag:tag
-		if action is not missing value then
-			if target is missing value then set target to me -- 'me' can't be used as an optional default
-			its setTarget:target
-			its setAction:(action as text) -- see the following action handler
-		end if
-		return it
-	end tell
-end makeSwitch
-
-
-# Perform an action when the connected switch is pressed.
-# The selector for the following is "switchAction:", and the button pressed is passed in `sender`.
-# Cocoa objects must be coerced to the appropriate AppleScript type.
-on switchAction:sender
-	set theTag to sender's tag
-	if (sender's state as integer) is 1 then
-		set theState to "on"
-	else
-		set theState to "off"
-	end if
-	display dialog "A switch tagged " & theTag & " was turned " & theState & "." buttons {"OK"} default button 1 giving up after 2
-	-- whatever
-end switchAction:
-
-
-# Make and return an NSButton.
+# Make and return a NSButton.
 # Note that the control highlight can act differently for various bezel, border, and transparency combinations.
 # Defaults are for a regular rounded momentary push button.
 to makeButton at origin given controlSize:controlSize : 0, width:width : 0, title:title : "Button", alternateTitle:alternateTitle : missing value, titleFont:titleFont : missing value, buttonType:buttonType : missing value, bordered:bordered : true, bezelStyle:bezelStyle : 1, bezelColor:bezelColor : missing value, transparent:transparent : false, tag:tag : missing value, action:action : "buttonAction:", target:target : missing value
