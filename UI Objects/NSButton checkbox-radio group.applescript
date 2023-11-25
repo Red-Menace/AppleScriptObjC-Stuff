@@ -50,7 +50,6 @@ end makeButtonGroup
 # Make an individual checkbox or radio button - the state will be on if the name ends with a return.
 # The image position is to the left of the title (default), other positions are left up to the user.
 to makeGroupButton at origin given radio:radio : true, controlSize:controlSize : 0, buttonName:buttonName : "Button", lineBreakMode:lineBreakMode : 5, tag:tag : missing value, action:action : "buttonGroupAction:", target:target : missing value
-	if action is not missing value and target is missing value then set target to me
 	if radio then
 		set button to current application's NSButton's radioButtonWithTitle:"" target:target action:(action as text)
 	else
