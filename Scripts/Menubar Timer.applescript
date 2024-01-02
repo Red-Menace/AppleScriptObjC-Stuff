@@ -1,24 +1,28 @@
 
 (*
 	Provides a countdown timer in a menu bar status item with adjustable times and alarm actions.  Note that when running from a script editor, if the script is recompiled, any instances still in the menu bar will remain (and not be functional) until the script editor quits.
-		
-	A custom countdown time in seconds can be set by using a valid AppleScript time expression, where the terms "hours" and "minutes" can be used for the number of seconds in an hour or minute, respectively.  For example:
-         300 -- the number of seconds in 5 minutes
-         3 * hours -- evaluates to 3 hours
-         3 * hours + 5 * minutes -- evaluates to 3 hours and 5 minutes
-	The same kind of expression can be used for an alarm time (the number of seconds past midnight), for example:
-         10 * hours + 30 * minutes -- evaluates to 10:30AM
-         The statusItem will initially show the alarm time as the countdown, but will change to the time remaining when the countdown starts - if the countdown is started when the alarm time has passed, it will immediately reach 0.
-		  Note that the countdown and alarm times wrap at 24 hours.
-         	
+
+	A custom countdown time in seconds can be set by using a valid AppleScript expression, where the terms "hours" and "minutes" can be used for the number of seconds in an hour or minute, respectively - for example:
+         300 -- the number of seconds in 5 minutes, shown as 00:05:00
+         3 * hours -- evaluates to 3 hours (10800), shown as 03:00:00
+         3 * hours + 5 * minutes -- evaluates to 3 hours and 5 minutes (11100), shown as 03:05:00
+   An expression can be also be used to specify an alarm time of day (the number of seconds past midnight), where additional terms such as "AM", "PM", "time", and "date" will be accepted - for example:
+         10 * hours + 30 * minutes -- 10:30 AM (37800), shown as 10:30:00
+         time of date "11:00 PM" -- (82800), shown as 23:00:00
+         (date "0:15 AM")'s time -- 15 minutes (900) past midnight, shown as 00:15:00
+         (date "12:15 AM")'s time -- same as above
+
+   The statusItem will initially show the alarm time as the countdown, but will change to the time remaining when the countdown starts - if the countdown is started when the alarm time has passed, it will immediately reach 0 and perform the alarm action.
+   Note that the countdown and alarm times wrap at 24 hours.
+
 	A user script can also be run when the countdown reaches 0 - although it uses scripts from the user's Application Scripts folder, the application is not sandboxed.
-      Scripts should be tested with the timer app to pre-approve any permissions.
-      If the script returns "quit" the application will quit.
-      If the script returns "restart" the timer will restart unless using an alarm time (since it will have expired).
-	
-	An alarm sound will continue until the timer is stopped or restarted.
-	Sound names from any <system|local|user>/Library/Sounds folder can be added, but must be .aiff audio files.
-	
+         Scripts should be tested with the timer app to pre-approve any permissions.
+         If the script returns "quit" the application will quit.
+         If the script returns "restart" the timer will restart unless using an alarm time.
+
+	Sound names from any of the <system|local|user>/Library/Sounds folder can be added to the actionMenuItems property, but must be .aiff audio files.
+   An alarm sound will continue until the timer is stopped or restarted.
+
 	Save as a stay-open application, and code sign or make the script read-only to keep accessibility permissions.
 	Multiple timers can be created by making multiple copies of the application - note that the name/bundle identifier must be different for preferences and the scripts folder.
 	Add a LSUIElement key to the application's Info.plist to make an agent (no app menu or dock tile).
@@ -32,27 +36,25 @@ use scripting additions
 # App properties - these are used when running in the Script Editor to access the appropriate user scripts folder.
 # The actual application bundle identifiers must be different for multiple copies, and set using the
 # reverse-dns form idPrefix.appName
-property idPrefix : "com.yourcompany"
+property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id or whatever
 property appName : "Menubar Timer"
 property version : 2.0
 
 # Cocoa API references
 property NSMenu : a reference to current application's NSMenu
-property NSMenuItem : a reference to current application's NSMenuItem
 property NSDictionary : a reference to current application's NSDictionary
 property NSUserDefaults : a reference to current application's NSUserDefaults
 property NSStatusBar : a reference to current application's NSStatusBar
-property NSFont : a reference to current application's NSFont
 property NSColor : a reference to current application's NSColor
 property onState : a reference to current application's NSControlStateValueOn
 property offState : a reference to current application's NSControlStateValueOff
 
 # User defaults (preferences)
 property colorIntervals : {0.35, 0.15} -- OK-to-caution and caution-to-warning color change percentages
-property countdownTime : 7200 -- current countdown time (seconds)
+property countdownTime : 3600 -- current countdown time (seconds of the custom or selected countdown time)
 property alarmTime : 0 -- a target time (overrides countdownTime if not expired)
-property timeSetting : "2 Hours" -- the current time menu setting
-property alarmSetting : "Hero" -- the current alarm menu setting
+property timeSetting : "1 Hour" -- the current time menu setting (from timeMenuItems property)
+property alarmSetting : "Hero" -- the current alarm menu setting (from actionMenuItems property)
 property userScript : "" -- POSIX path to a user script
 
 # User interface items
@@ -62,7 +64,8 @@ property timeMenu : missing value -- this will be a menu of the countdown times
 property alarmMenu : missing value -- this will be a menu of the alarm settings
 property timer : missing value -- this will be a repeating timer
 property alarmSound : missing value -- this will be the sound (NSSound works better with the timer)
-property soundResources : {"Basso", "Blow", "Glass", "Hero", "Ping", "Sosumi", "Tink"} -- from system
+property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"}
+property actionMenuItems : {"Basso", "Blow", "Glass", "Hero", "Ping", "Sosumi", "Tink"}
 
 # Script properties and globals
 property thisApp : current application
@@ -74,7 +77,7 @@ property testing : false -- don't try to update preferences when testing
 global countdown -- the current countdown time (seconds)
 global |paused| -- a flag for pausing the timer update (note that 'paused' is a term in Script Debugger)
 global titleFont -- font used by the statusItem button title
-global okColor, cautionColor, warningColor -- text colors
+global okColor, cautionColor, warningColor -- statusItem text colors
 
 
 ##############################
@@ -96,7 +99,7 @@ to initialize() -- set up the app/script
 		setScriptsFolder()
 		set countdown to countdownTime
 		set |paused| to true
-		set titleFont to NSFont's fontWithName:"Courier New Bold" |size|:16 -- boldSystemFontOfSize:14
+		set titleFont to thisApp's NSFont's fontWithName:"Courier New Bold" |size|:16 -- boldSystemFontOfSize:14
 		set okColor to NSDictionary's dictionaryWithObject:(NSColor's systemGreenColor) forKey:"NSColor"
 		set cautionColor to NSDictionary's dictionaryWithObject:(NSColor's systemYellowColor) forKey:"NSColor"
 		set warningColor to NSDictionary's dictionaryWithObject:(NSColor's systemRedColor) forKey:"NSColor"
@@ -115,12 +118,12 @@ to performAction() -- do something when the countdown reaches 0
 		if alarmSetting is "Off" then -- nothing
 			return my startStop:(missing value) -- stop countdown
 		else if alarmSetting is "Run Script" then -- run a script and get the result (if any)
-			set reply to (do shell script "osascript " & quoted form of userScript) -- better path handling
-			if reply is in {"quit"} then -- quit
+			set response to (do shell script "osascript " & quoted form of userScript) -- better path handling
+			if response is in {"quit"} then
 				terminate()
-			else if reply is in {"restart"} then
+			else if response is in {"restart"} then
 				if timeSetting is "Alarm Time" then
-					my startStop:(missing value) -- time has passed, so don't try to restart
+					my startStop:(missing value) -- the alarm time has passed, so don't try to restart
 				else
 					my startStop:{title:"Start Countdown"} -- restart timer and continue
 				end if
@@ -160,14 +163,18 @@ to writeDefaults()
 	end tell
 end writeDefaults
 
-to terminate() -- quit handler not called from NSApplication terminate
+to terminate() -- quit handler not called from statusItem
+	quit
+end terminate
+
+on quit
 	if timer is not missing value then timer's invalidate()
 	NSStatusBar's systemStatusBar's removeStatusItem:statusItem
 	if name of thisApp does not start with "Script" then -- don't update or quit script editor
 		writeDefaults()
-		tell me to quit
+		continue quit
 	end if
-end terminate
+end quit
 
 to setScriptsFolder() -- set the user scripts folder
 	tell (id of thisApp) to if it does not start with idPrefix then -- running from Script Editor
@@ -215,7 +222,7 @@ end buildMenu
 to addTimeMenu to theMenu -- submenu for the countdown times
 	tell (NSMenu's alloc's initWithTitle:"")
 		its setAutoenablesItems:false
-		repeat with anItem in {"30 Minutes", "1 Hour", "2 Hours", "4 Hours"}
+		repeat with anItem in timeMenuItems -- must be a value followed by "Minutes" or "Hours"
 			my (addMenuItem to it given title:anItem, action:"setCountdownTime:", state:((anItem as text) is timeSetting))
 		end repeat
 		my (addMenuItem to it)
@@ -231,10 +238,10 @@ to addAlarmMenu to theMenu -- submenu for the alarm actions
 		its setAutoenablesItems:false
 		my (addMenuItem to it given title:"Off", action:"setAlarm:", state:(alarmSetting is "Off"))
 		my (addMenuItem to it)
-		repeat with anItem in soundResources
+		repeat with anItem in actionMenuItems -- must be a name from one of the /Library/Sounds/ folders
 			set state to alarmSetting is (anItem as text)
 			my (addMenuItem to it given title:anItem, action:"setAlarm:", state:state)
-			if state then set my alarmSound to (current application's NSSound's soundNamed:anItem)
+			if state then set my alarmSound to (thisApp's NSSound's soundNamed:anItem)
 		end repeat
 		my (addMenuItem to it)
 		my (addMenuItem to it given title:"Run Script", action:"setAlarm:", state:(alarmSetting is "Run Script"))
@@ -244,7 +251,7 @@ to addAlarmMenu to theMenu -- submenu for the alarm actions
 end addAlarmMenu
 
 to setStatusTitle(theTime) -- set the statusItem button's attributed string title
-	set attrText to current application's NSMutableAttributedString's alloc's initWithString:formatTime(theTime)
+	set attrText to thisApp's NSMutableAttributedString's alloc's initWithString:formatTime(theTime)
 	tell colorIntervals to if theTime ≥ ((its first item) * countdownTime) then
 		attrText's setAttributes:okColor range:{0, attrText's |length|()}
 	else if theTime < ((its first item) * countdownTime) and theTime ≥ ((its second item) * countdownTime) then
@@ -252,7 +259,7 @@ to setStatusTitle(theTime) -- set the statusItem button's attributed string titl
 	else
 		attrText's setAttributes:warningColor range:{0, attrText's |length|()}
 	end if
-	attrText's addAttribute:(current application's NSFontAttributeName) value:titleFont range:{0, attrText's |length|()}
+	attrText's addAttribute:(thisApp's NSFontAttributeName) value:titleFont range:{0, attrText's |length|()}
 	statusItem's button's setAttributedTitle:attrText
 end setStatusTitle
 
@@ -270,12 +277,11 @@ end resetCountdown
 ##############################
 
 to setCountdownTime:sender -- set the countdown time and menu item state
-	set old to sender's state as text
 	(timeMenu's itemWithTitle:timeSetting)'s setState:offState -- old
 	set newTime to (sender's title) as text
 	set my timeSetting to newTime
 	set interval to (first word of newTime) as integer
-	resetCountdown(item (((interval is 30) as integer) + 1) of {interval * hours, 30 * minutes})
+	resetCountdown(item (((newTime contains "Minute") as integer) + 1) of {interval * hours, interval * minutes})
 	sender's setState:onState -- new
 end setCountdownTime:
 
@@ -286,6 +292,7 @@ to setAlarmTime:sender -- set an alarm time
 		set timeToGo to theSeconds - (time of (current date))
 		if timeToGo < 0 then -- alarm time has passed
 			(thisApp's NSSpeechSynthesizer's alloc's initWithVoice:(missing value))'s startSpeakingString:"beep" -- no delay
+			say "beep"
 			activate me
 			display dialog "The specified time is valid and has been saved, but note that it is earlier than the current time." with title "Set Alarm Time" buttons {"OK"} default button 1 giving up after 4
 		end if
@@ -318,7 +325,7 @@ to setAlarm:sender -- set the alarm action and menu item state
 		if response is false then return
 		set my userScript to response
 	else if newAlarm is not "Off" then -- set up sound
-		set my alarmSound to (current application's NSSound's soundNamed:newAlarm)
+		set my alarmSound to (thisApp's NSSound's soundNamed:newAlarm)
 		alarmSound's play() -- sample
 	end if
 	(alarmMenu's itemWithTitle:alarmSetting)'s setState:offState -- old
@@ -445,7 +452,8 @@ to getTime(what) -- get a time for countdown or alarm
 	repeat
 		try
 			activate me
-			set theSeconds to validate(text returned of (display dialog "The current " & what & " time is " & formatTime(theTime) & " (hh:mm:ss)" & return & errorText & return & "Enter a new " & what & " time in seconds:" default answer "" & theTime with title "Set " & capWhat & " Time" buttons {"Cancel", "Set " & capWhat} default button 2))
+			set response to (text returned of (display dialog "The current " & what & " time is " & formatTime(theTime) & " (hh:mm:ss)" & return & errorText & return & "Enter a new " & what & " time in seconds:" default answer "" & theTime with title "Set " & capWhat & " Time" buttons {"Cancel", "Set " & capWhat} default button 2))
+			set theSeconds to validate(response, (what is "alarm"))
 			if theSeconds is not missing value then return theSeconds
 		on error errmess number errnum
 			if errnum is -128 then exit repeat
@@ -499,10 +507,12 @@ to formatTime(theSeconds) -- return formatted string (hh:mm:ss) from seconds
 	return theSeconds -- wraps at 24 hours
 end formatTime
 
-to validate(timeExpr) -- validation of a time expression (to catch errors and random script input)
+to validate(timeExpr, extra) -- validation of a time expression (to catch errors and random script input)
 	try
-		repeat with aWord in (words of timeExpr) -- check for allowed words or integer values
-			if aWord is not in {"hours", "minutes", "+"} then aWord as integer
+		set extraTerms to {} -- countdown expression
+		if extra then set extraTerms to {"time", "of", "date", ":", "s", "AM", "PM"} -- alarm time expression
+		repeat with aWord in (words of timeExpr) -- check for allowed words/characters or integer values
+			if aWord is not in {"hours", "minutes", "+"} & extraTerms then aWord as integer
 		end repeat
 		set theResult to (run script timeExpr) as integer -- must return integer seconds < 86400 (24 hrs)
 		if theResult > 86399 then set theResult to theResult mod 86400 -- wrap at 24 hours
