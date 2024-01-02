@@ -4,9 +4,9 @@ use framework "Foundation"
 use scripting additions
 
 
-(* General-purpose menu creation:
 
-	Multiple menu levels are supported.
+(* NSMenu example:
+
 	Separator items are indicated by an empty string.
 	
 	Menu items use a common menuAction: handler and have no key equivalent by default,
@@ -43,7 +43,6 @@ use scripting additions
 	and the tag and menu/menu item titles are logged as a reference (for action handlers, etc).
 	The example action handler just displays a dialog with some info about the sender.
 
-# example:
 property mainWindow : missing value -- globals can also be used
 property customMenu : missing value
 
@@ -117,6 +116,18 @@ to addMenuItem to theMenu given title:title : "MenuItem", target:target : missin
 	return menuItem
 end addMenuItem
 
+# Alternate handler to add a menu item to a menu.
+to addAMenuItem to theMenu given title:title : (missing value), action:action : (missing value), theKey:theKey : "", target:target : missing value, tag:tag : (missing value), enable:enable : (missing value), state:state : (missing value) -- given parameters are optional
+	if title is in {"", missing value} then return theMenu's addItem:(thisApp's NSMenuItem's separatorItem)
+	tell (theMenu's addItemWithTitle:title action:action keyEquivalent:theKey)
+		if action is not missing value then its setTarget:(item (((target is missing value) as integer) + 1) of {target, me})
+		if tag is not missing value then its setTag:(tag as integer)
+		if enable is not missing value then its setEnabled:(item (((enable is false) as integer) + 1) of {true, false})
+		if state is not missing value then its setState:state -- 1, 0, -1, or NSControlStateValue enum
+		return it
+	end tell
+end addAMenuItem
+
 # Common menu action - can use sender's title or tag for comparisons.
 on menuAction:sender
 	if ((sender's tag) as integer) is 0 then
@@ -132,6 +143,13 @@ on menuAction:sender
 	display dialog "Menu item '" & sender's title & parentText & tagText buttons {"OK"} giving up after 3
 end menuAction:
 
+
+#
+# NSControlStateValues:
+# NSControlStateValueOn = 1
+# NSControlStateValueOff = 0
+# NSControlStateValueMixed = -1
+#
 
 # 
 # NSEventModifierFlags (can be added for combinations):
