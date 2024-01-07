@@ -19,7 +19,7 @@ mainWindow's contentView's addSubview:labelField
 
 # Make and return a plain text NSTextField or NSSecureTextField.
 # A bezel affects drawing the background, so it isn't used for labels.
-to makeTextField at origin given dimensions:dimensions : {}, stringValue:stringValue : missing value, label:label : false, secure:secure : false, editable:editable : missing value, selectable:selectable : missing value, bordered:bordered : missing value, bezelStyle:bezelStyle : missing value, placeholder:placeholder : missing value, textFont:textFont : missing value, textColor:textColor : missing value, backgroundColor:backgroundColor : missing value
+to makeTextField at origin given dimensions:dimensions : {}, stringValue:stringValue : missing value, label:label : false, secure:secure : false, lineBreakMode:lineBreakMode : 5, editable:editable : missing value, selectable:selectable : missing value, bordered:bordered : missing value, bezelStyle:bezelStyle : missing value, placeholder:placeholder : missing value, textFont:textFont : missing value, textColor:textColor : missing value, backgroundColor:backgroundColor : missing value
 	set theClass to current application's NSTextField
 	if label is true then
 		set textField to theClass's labelWithString:stringValue
@@ -38,6 +38,7 @@ to makeTextField at origin given dimensions:dimensions : {}, stringValue:stringV
 	if textFont is not missing value then textField's setFont:textFont
 	if textColor is not missing value then textField's setTextColor:textColor
 	if backgroundColor is not missing value then textField's setBackgroundColor:backgroundColor
+	if lineBreakMode is not missing value then textField's setLineBreakMode:lineBreakMode
 	if dimensions is in {{}, false, missing value} then -- size to fit
 		textField's setFrameOrigin:origin
 		textField's sizeToFit()
