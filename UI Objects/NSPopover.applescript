@@ -21,11 +21,11 @@ showPopover for (mainWindow's contentView) given controls:{button, textField}
 # or use the individual handlers:
 set popoverView to makeViewController for {button, textField}
 set my popover to makePopover for popoverView
-popover's showRelativeToRect:{{0, 0}, {0, 0}} ofView:(mainWindow's contentView) preferredEdge:0
+popover's showRelativeToRect:{{0, 0}, {0, 0}} ofView:(mainWindow's contentView) preferredEdge:0 -- view must be in a window
 *)
 
 
-# Combination handler to create and show a popover.
+# Combination handler to create and show a popover - view must be in a window.
 to showPopover for targetView given controls:controls : {}, rect:rect : {{0, 0}, {0, 0}}, edge:edge : 0, padding:padding : {20, 20}, animates:animates : true, behavior:behavior : 1
 	set popoverView to makeViewController for controls given padding:padding -- create viewController for the controls
 	set popover to makePopover for popoverView given animates:animates, behavior:behavior -- create popover
@@ -64,7 +64,7 @@ end makeViewController
 
 
 ##################################################
-#	Control handlers
+#	Example Control handlers
 ##################################################
 
 # Make and return an NSTextField.
