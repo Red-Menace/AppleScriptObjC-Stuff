@@ -46,19 +46,23 @@ end makePopover
 
 # Make and return a view controller for the popover controls.
 # Controls are assumed to be stacked, with the default size being the maximum width and combined height of the control(s).
-# View size can be padded (default is for a 10 pixel border) - change the padding and the origin of the controls to suit.
-to makeViewController for controls given padding:padding : {20, 20}
+# View size can be padded (default is none) - set the origin and properties of the individual controls to suit.
+to makeViewController for controls given padding:padding : {0, 0}, title:title : missing value, representedObject:representedObject : missing value
 	set {maxWidth, maxHeight} to {0, 0}
 	set viewController to current application's NSViewController's alloc's init
 	viewController's setView:(current application's NSView's alloc's initWithFrame:{{0, 0}, {0, 0}})
-	repeat with anItem in (controls as list)
-		set {width, height} to last item of anItem's frame() as list
-		if width > maxWidth then set maxWidth to width
-		set maxHeight to maxHeight + height
+	repeat with anItem in (controls as list) -- adjust size to fit controls
+		set {{originX, originY}, {width, height}} to anItem's frame() as list
+		set newWidth to originX + width
+		set newHeight to originY + height
+		if newWidth > maxWidth then set maxWidth to newWidth
+		if newHeight > maxHeight then set maxHeight to newHeight
 		(viewController's view's addSubview:anItem)
 	end repeat
 	if class of padding is not list then set padding to {padding, padding} -- common width & height padding
 	viewController's view's setFrameSize:{maxWidth + (first item of padding), maxHeight + (last item of padding)}
+	if title is not missing value then viewController's setTitle:(title as text)
+	if representedObject is not missing value then viewController's setRepresentedObject:representedObject
 	return viewController
 end makeViewController
 
