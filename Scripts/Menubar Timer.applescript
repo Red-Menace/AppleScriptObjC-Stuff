@@ -1,32 +1,33 @@
 
 (*
-	This script provides a formatted "hh:mm:ss" countdown timer in a menu bar statusItem.  It includes menu items to adjust the countdown or alarm time and action to perform when the coundown expires.  When the timer is running, the time remaining is shown in normal (green), caution (yellow), and warning (red) colors, which are (adjustable) percentages of the remaining countdown time (or the alarm time from midnight).
+	This script provides a formatted "hh:mm:ss" countdown timer in a menu bar statusItem.  It includes menu items to adjust the countdown or alarm time and action to perform when the coundown expires.  To keep the statusItem title and time settings consistent, the title and countdown/alarm time date pickers use a 24-hour format.  The various timer settings are made from menu selections and popover dialogs.
+	
+	• The statusItem title will show a time with an icon (and tooltip) indicating if it is a countdown or alarm - if set to an alarm, the alarm time is shown when the timer is stopped, but will change to the time remaining when the timer is started.  Note that while the countdown and alarm times both wrap at 24 hours, the countdown time will be from when the timer is started, while the alarm time will only match one time per day.
 
-	• To keep the statusItem title and time settings consistent, the countdown and alarm times are set with a date picker using a 24-hour format.  Other settings are made from menu selections and popover dialogs.
-
-	• The statusItem title will show an alarm time when the timer is stopped, but will change to the time remaining when the countdown starts - if the countdown is started when the alarm time has passed, it will immediately time out and perform the alarm action.
-	• Note that while the countdown and alarm times both wrap at 24 hours, the countdown time will be from when the timer is started, while the alarm time will only match one time per day.
-
+	• While the timer is running, the time remaining is shown in normal (green), caution (yellow), and warning (red) colors, which are adjustable percentages of the remaining countdown time, or the alarm time from midnight.
+	
 	• Preset (menu item) times can be customised by placing the desired items in the list for the timeMenuItems property.  The items must be a value followed by "Hours", "Minutes", or "Seconds" - be sure to set the timeSetting and countdownTime properties for the matching initial default.
 
-	• Preset (menu item) sounds can also be customised by placing the desired names in the list for the actionMenuItems property.  Names (minus the extension) of items from any of the <system|local|user>/Library/Sounds folders can be used, but the sounds must be .aiff audio files.  Be sure to set the alarmSetting property for the matching initial default.
-	• If using an alarm sound, when the countdown reaches 0 it will repeatedly play and the statusItem will flash until the timer is stopped or restarted.
+	• Preset (menu item) sounds can also be customised by placing the desired names in the list for the actionMenuItems property.  Names (minus the extension) of items from any of the <system|local|user>/Library/Sounds folders can be used, but the sounds must be .aiff audio files.  Be sure to set the alarmSetting property for the matching initial default.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play and the statusItem will flash until the timer is stopped or restarted.
 
 	• In addition to playing an alarm sound, a user script can be run when the countdown reaches 0.  Although the application is not sandboxed (and AppleScriptObjC can't use NSAppleScriptTask anyway), it still expects scripts to be placed in the user's ~/Library/Application Scripts/<bundle-identifier> folder.  The app/script will create this folder as needed, and it can also be viewed when setting the script.
 	      Scripts should be tested with the timer app to pre-approve any permissions.
-	      A script can provide feedback to the application when it completes (otherwise the timer just stops):
-	         Returning "quit" will cause the application to quit.
+	      A script can also provide feedback when it completes (otherwise the timer just stops):
+	         Returning "quit" will cause the timer application to quit.
 	         Returning "restart" will restart the timer (unless using an alarm time, since it will have expired).
+	         
+	• A preference (optionClick) is included to enable different functionality when option/right-clicking the statusItem.  When true, a handler (doOptionClick) will be called instead of showing the menu.  This can be used for something separate from the menu such as an about panel (default), help/instructions, preferences, etc.
 
 	• Save as a stay-open application, and code sign or make the script read-only to keep accessibility permissions.
-	• Multiple timers can be created by making multiple copies of the application - note that the name/bundle identifier must be different for preferences and the scripts folder.
 	• Add a LSUIElement key to the application's Info.plist to make an agent (no app menu or dock tile).
+	
+	• Multiple timers can be created by making multiple copies of the application - note that the name/bundle identifier must be different for preferences and the scripts folder.
 
 	Finally, note that when running from a script editor, if the script is recompiled, any statusItem left in the menu bar will remain - but will no longer function - until the script editor is restarted.  Also, errors will fail silently, so when debugging you can add beep or try statements, display a dialog, etc.
 *)
 
 
-use AppleScript version "2.4" -- Yosemite (10.10) or later
+use AppleScript version "2.5" -- Sierra (10.12) or later for new enumerations
 use framework "Foundation"
 use scripting additions
 
@@ -34,7 +35,7 @@ use scripting additions
 # The actual application bundle identifiers must be different for multiple copies, and should use the reverse-dns form idPrefix.appName
 property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id  (or whatever)
 property appName : "Menubar Timer" -- also used as a title for the first (disabled) menu item
-property version : 3.0
+property version : 3.1
 
 # Cocoa API references
 property thisApp : current application
@@ -48,6 +49,7 @@ property alarmTime : 0 -- current target time (overrides countdownTime if not ex
 property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list) + "Alarm Time…" and "Custom Countdown…"
 property alarmSetting : "Basso" -- current alarm setting (from actionMenuItems list) + "Run Script…"
 property userScript : "" -- POSIX path to a user script
+property optionClick : false -- support statusItem button option/right-click? (see the doOptionClick handler)
 
 # Menu item outlets and settings
 property statusItem : missing value -- this will be the status bar item
@@ -111,7 +113,8 @@ end performAction
 
 to runScript() -- run a script and get the result (if any)
 	try
-		set response to (do shell script "osascript " & quoted form of userScript) -- better path handling
+		do shell script "open -g /System/Library/CoreServices/ScriptMonitor.app" -- shows script progress in the menu bar
+		set response to (do shell script "osascript -P " & quoted form of userScript) -- better path handling
 		if response is in {"quit"} then
 			terminate()
 		else if response is in {"restart"} and timeSetting is not "Alarm Time…" then
@@ -122,20 +125,21 @@ to runScript() -- run a script and get the result (if any)
 			my startStop:(missing value)
 		end if
 	on error errmess number errnum -- script error
-		oops("runScript", errmess, errnum)
+		oops for "runScript" given errmess:errmess, errnum:errnum
 		my startStop:(missing value) -- stop the countdown
 	end try
 end runScript
 
 to readDefaults()
 	tell standardUserDefaults() of thisApp's NSUserDefaults
-		its registerDefaults:{alarmSetting:alarmSetting, colorIntervals:colorIntervals, countdownTime:countdownTime, alarmTime:alarmTime, timeSetting:timeSetting, userScript:userScript}
+		its registerDefaults:{alarmSetting:alarmSetting, colorIntervals:colorIntervals, countdownTime:countdownTime, alarmTime:alarmTime, timeSetting:timeSetting, userScript:userScript, optionClick:optionClick}
 		tell (its valueForKey:"AlarmSetting") to if it ≠ missing value then set my alarmSetting to (it as text)
 		tell (its valueForKey:"Intervals") to if it ≠ missing value then set my colorIntervals to (it as list)
 		tell (its valueForKey:"Countdown") to if it ≠ missing value then set my countdownTime to (it as integer)
 		tell (its valueForKey:"AlarmTime") to if it ≠ missing value then set my alarmTime to (it as integer)
 		tell (its valueForKey:"TimeSetting") to if it ≠ missing value then set my timeSetting to (it as text)
 		tell (its valueForKey:"ScriptPath") to if it ≠ missing value then set my userScript to (it as text)
+		tell (its valueForKey:"OptionClick") to if it ≠ missing value then set my optionClick to (it as boolean)
 	end tell
 end readDefaults
 
@@ -148,6 +152,7 @@ to writeDefaults()
 		its setValue:(alarmTime as integer) forKey:"AlarmTime"
 		its setValue:(timeSetting as text) forKey:"TimeSetting"
 		its setValue:(userScript as text) forKey:"ScriptPath"
+		its setValue:(optionClick as boolean) forKey:"OptionClick"
 	end tell
 end writeDefaults
 
@@ -179,6 +184,10 @@ end setScriptsFolder
 # Delegate Handlers          #
 ##############################
 
+on menuDidClose:_sender
+	if optionClick then statusItem's setMenu:(missing value) -- clear menu setting when using option/right-click
+end menuDidClose:
+
 on popoverDidClose:_notification
 	tell popoverWindow to |close|()
 end popoverDidClose:
@@ -191,15 +200,22 @@ end popoverDidClose:
 to buildStatusItem() -- build the menu bar status item
 	buildMenu()
 	tell (thisApp's NSStatusBar's systemStatusBar's statusItemWithLength:(thisApp's NSVariableStatusItemLength))
+		if optionClick then -- menu is set in in the button action
+			its (button's setTarget:me)
+			its (button's setAction:"statusItemAction:")
+			its (button's sendActionOn:15) -- probably more than needed, but mask combinations act a bit odd
+		else
+			its setMenu:statusMenu
+		end if
 		its (button's setFont:titleFont)
 		its (button's setTitle:(my formatTime(countdownTime)))
-		its setMenu:statusMenu
 		set my statusItem to it
 	end tell
 end buildStatusItem
 
 to buildMenu() -- build a menu for the status item
 	tell (thisApp's NSMenu's alloc's initWithTitle:"")
+		its setDelegate:me -- to handle an option/right-click
 		its setAutoenablesItems:false
 		my (addMenuItem to it without enable given title:appName) -- show the app name as the first item (disabled)
 		my (addMenuItem to it)
@@ -309,7 +325,7 @@ end buildIntervalsPopover
 to makePopoverWindow() -- borderless window for the popover's positioning view
 	set screen to first item of ((thisApp's NSScreen's screens) as list) -- screen with menu
 	set fullScreen to second item of ((screen's frame) as list) -- screen size
-	tell (thisApp's NSWindow's alloc()'s initWithContentRect:{fullScreen, {97, 24}} styleMask:0 backing:2 defer:true) -- statusItem size
+	tell (thisApp's NSWindow's alloc()'s initWithContentRect:{fullScreen, {116, 24}} styleMask:0 backing:2 defer:true) -- statusItem's space in the menu bar
 		set my popoverWindow to it
 		return it
 	end tell
@@ -422,6 +438,17 @@ end makeSlider
 # Action Handlers            #
 ##############################
 
+on statusItemAction:sender -- handle option/right-click
+	if not optionClick then return
+	set eventType to (thisApp's NSApp's currentEvent's |type|) as integer
+	if eventType is (thisApp's NSEventTypeLeftMouseDown) as integer then -- normal/left
+		statusItem's setMenu:statusMenu -- add menu to button...
+		statusItem's button's performClick:me -- ...and click it
+	else if eventType is (thisApp's NSEventTypeRightMouseDown) as integer then -- option/right
+		doOptionClick()
+	end if
+end statusItemAction:
+
 to updateCountdown:_sender -- update the statusItem title (called by timer)
 	if |paused| then return
 	if countdown ≤ 0 then -- alarm time remaining can be < 0
@@ -430,7 +457,7 @@ to updateCountdown:_sender -- update the statusItem title (called by timer)
 		if alarmTime > 0 and timeSetting is "Alarm Time…" then -- calculate time remaining to alarm
 			set countdown to alarmTime - (time of (current date))
 		else -- continue countdown
-			set countdown to countdown - 1 -- 1 second interval
+			set countdown to countdown - 1 -- update ≈ 1 second or whenever the timer fires next
 		end if
 		setAttributedTitle(countdown)
 	end if
@@ -439,11 +466,8 @@ end updateCountdown:
 to setMenuTime:sender -- update the time menu selection
 	set setting to (sender's title) as text
 	set interval to (first word of setting) as integer
-	if setting contains "Minute" or setting contains "Hour" then
-		set my countdownTime to item (((setting contains "Minute") as integer) + 1) of {interval * hours, interval * minutes}
-	else
-		set my countdownTime to interval -- seconds
-	end if
+	if setting contains "Minute" or setting contains "Hour" then set interval to item (((setting contains "Minute") as integer) + 1) of {interval * hours, interval * minutes}
+	set my countdownTime to interval mod 86400
 	resetTimeMenuState(setting)
 end setMenuTime:
 
@@ -463,11 +487,13 @@ to startStop:sender -- (re)set the timer and main menu titles (tags are used for
 	set {|paused|, itemTitle} to {false, ""}
 	if sender is not missing value then set itemTitle to (sender's title as text)
 	my resetCountdown()
+	(statusMenu's itemWithTag:200)'s setTitle:"Pause"
 	if itemTitle is "Start" then
-		(statusMenu's itemWithTitle:"Reset")'s setEnabled:true
 		(statusMenu's itemWithTag:100)'s setTitle:"Stop"
-		(statusMenu's itemWithTag:200)'s setEnabled:true
-		statusItem's button's setToolTip:(item (((timeSetting is "Alarm Time…") as integer) + 1) of {"Countdown Remaining", "Time Until Alarm"})
+		set state to item (((timeSetting is "Alarm Time…") as integer) + 1) of {true, false}
+		(statusMenu's itemWithTitle:"Reset")'s setEnabled:state
+		(statusMenu's itemWithTag:200)'s setEnabled:state
+		statusItem's button's setToolTip:(item (((not state) as integer) + 1) of {"Countdown Remaining", "Time Until Alarm"})
 		if timer is not missing value then return
 		set my timer to thisApp's NSTimer's timerWithTimeInterval:1 target:me selector:"updateCountdown:" userInfo:(missing value) repeats:true -- restart
 		thisApp's NSRunLoop's mainRunLoop's addTimer:timer forMode:(thisApp's NSDefaultRunLoopMode)
@@ -476,7 +502,6 @@ to startStop:sender -- (re)set the timer and main menu titles (tags are used for
 		(statusMenu's itemWithTitle:"Reset")'s setEnabled:false
 		(statusMenu's itemWithTag:100)'s setTitle:"Start"
 		(statusMenu's itemWithTag:200)'s setEnabled:false
-		(statusMenu's itemWithTag:200)'s setTitle:"Pause"
 		if timer is not missing value then timer's invalidate() -- don't leave a timer running
 		set my timer to missing value
 	end if
@@ -511,7 +536,7 @@ on timePopover:sender -- handle buttons from the date picker popover
 	tell popover to |close|()
 end timePopover:
 
-on updatePopup:sender -- update popup button changes
+to updatePopup:sender -- update popup button changes
 	sender's setTitle:(sender's titleOfSelectedItem) -- note that there may not always be a selection
 end updatePopup:
 
@@ -529,7 +554,7 @@ on scriptPopover:sender -- handle buttons from the popup popover
 	tell popover to |close|()
 end scriptPopover:
 
-on updateSlider:sender -- update slider changes (not continuous)
+to updateSlider:sender -- update slider changes (not continuous)
 	set {cautionLabel, warningLabel, cautionSlider, warningSlider} to getPopoverControls({"NSTextField", "NSSlider"})
 	if sender is in {missing value, cautionSlider} then cautionLabel's setStringValue:("Caution:  " & (round (((cautionSlider's floatValue) as real) * 100)) / 100)
 	if sender is in {missing value, warningSlider} then warningLabel's setStringValue:("Warning: " & (round (((warningSlider's floatValue) as real) * 100)) / 100)
@@ -587,13 +612,14 @@ to setAlarmTime(theSeconds)
 end setAlarmTime
 
 to resetCountdown() -- reset the countdown to the current setting (does not stop or reset the timer)
-	set flasher to false
-	set countdown to (item (((timeSetting is "Alarm Time…") as integer) + 1) of {countdownTime, alarmTime})
+	set {flasher, indx} to {false, ((timeSetting is "Alarm Time…") as integer) + 1}
+	set countdown to item indx of {countdownTime, alarmTime}
 	statusItem's button's setTitle:formatTime(countdown) -- plain text
-	statusItem's button's setToolTip:(item (((timeSetting is "Alarm Time…") as integer) + 1) of {"Countdown", "Alarm Time"})
+	statusItem's button's setImage:(thisApp's NSImage's imageNamed:(item indx of {"NSTouchBarHistoryTemplate", "NSTouchBarAlarmTemplate"}))
+	statusItem's button's setToolTip:(item indx of {"Countdown", "Alarm Time"})
 end resetCountdown
 
-to resetTimeMenuState(setting) -- (re)set state for a time menu item
+to resetTimeMenuState(setting) -- (re)set state for a time menu setting change
 	(timeMenu's itemWithTitle:timeSetting)'s setState:offState -- old
 	set my timeSetting to setting
 	my resetCountdown()
@@ -601,7 +627,7 @@ to resetTimeMenuState(setting) -- (re)set state for a time menu item
 	my startStop:(missing value)
 end resetTimeMenuState
 
-to resetAlarmMenuState(setting) -- (re)set state for an alarm menu item
+to resetAlarmMenuState(setting) -- (re)set state for an alarm menu setting change
 	(alarmMenu's itemWithTitle:alarmSetting)'s setState:offState -- old
 	set my alarmSetting to setting
 	(alarmMenu's itemWithTitle:alarmSetting)'s setState:onState -- new
@@ -633,6 +659,15 @@ to getUserScripts() -- get user scripts - returns the current name and a diction
 	return {current, lexicon}
 end getUserScripts
 
+to doOptionClick() -- handle statusItem button option/right-click
+	try -- for debugging
+		thisApp's NSApp's orderFrontStandardAboutPanel:me -- or whatever
+		# Note that this can be called multiple times, so it should check to see if whatever is still running.
+	on error errmess number errnum
+		oops for "doOptionClick" given errmess:errmess, errnum:errnum, givingUpAfter:5
+	end try
+end doOptionClick
+
 
 ##############################
 # General-purpose Handlers   #
@@ -658,10 +693,12 @@ to formatTime(theSeconds) -- return formatted 24 hour string (hh:mm:ss) from the
 			to return (text -6 thru -5) & ":" & (text -4 thru -3) & ":" & (text -2 thru -1) -- wraps at 24 hours
 end formatTime
 
-on oops(theHandler, errmess, errnum) -- common error dialog
+on oops for theHandler given errmess:errmess, errnum:errnum : "", givingUpAfter:giveUpTime : 0 -- common error dialog
 	set handlerText to ""
 	if theHandler is not in {"", missing value} then set handlerText to " in the " & quoted form of theHandler & " handler."
+	if errnum is not in {"", missing value} then set errnum to " (" & errnum & ")"
+	if class of giveUpTime is not integer then set giveUpTime to 0
 	activate me
-	display alert "Script Error" & handlerText message errmess & " (" & errnum & ")"
+	display alert "Script Error" & handlerText message errmess & errnum giving up after giveUpTime
 end oops
 
