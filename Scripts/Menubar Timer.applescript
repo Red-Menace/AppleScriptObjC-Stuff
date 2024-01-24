@@ -38,7 +38,7 @@ use scripting additions
 # The actual application bundle identifiers must be different for multiple copies, and should use the reverse-dns form idPrefix.appName
 property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used as a title in the first menu item (disabled)
-property version : 3.4
+property version : 3.4 -- macOS 13 Ventura or later (may run in earlier versions)
 
 # Cocoa API references
 property thisApp : current application
@@ -69,9 +69,10 @@ property attrText : missing value -- this will be an attributed string for the s
 property alarmSound : missing value -- this will be the selected sound
 
 # Presets
-property intervalsMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- percentages
+property intervalMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- percentages
 property actionMenuItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Sosumi", "Submarine"} -- see allSounds
 property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"}
+property bundledSounds : {} -- this will be a list of sounds from the application bundle
 
 # Popover outlets
 property positioningWindow : missing value -- this will be a window for the popover's positioning view
@@ -102,9 +103,10 @@ end run
 
 to initialize() -- set up the app/script
 	readDefaults()
+	getSounds()
+	if alarmSetting is not in actionMenuItems and alarmSetting is not in {"Off", "Run Script…"} then set my alarmSetting to first item of actionMenuItems -- sound no longer present
 	set {isPaused, flasher} to {true, false}
 	set {countdown, textColors} to {countdownTime, {}}
-	if allSounds then getSounds() -- override preset
 	tell thisApp's id to set bundleID to item (((it starts with idPrefix) as integer) + 1) of {my filterID(idPrefix & "." & appName), it}
 	set userScriptsFolder to POSIX path of ((path to library folder from user domain) as text) & "Application Scripts/" & bundleID & "/"
 	thisApp's NSFileManager's defaultManager's createDirectoryAtPath:userScriptsFolder withIntermediateDirectories:true attributes:(missing value) |error|:(missing value)
@@ -174,7 +176,7 @@ to readDefaults()
 end readDefaults
 
 to writeDefaults()
-	if testing is true then return -- don't update preferences when testing
+	if testing then return -- don't update preferences when testing
 	tell standardUserDefaults() of thisApp's NSUserDefaults
 		its setValue:(alarmSetting as text) forKey:"AlarmSetting"
 		its setValue:(colorIntervals as list) forKey:"Intervals"
@@ -229,6 +231,7 @@ to buildStatusItem() -- build the menu bar status item
 			its setMenu:statusMenu
 		end if
 		its (button's setFont:titleFont)
+		its (button's setImagePosition:(thisApp's NSImageLeft))
 		its (button's setTitle:(my formatTime(countdownTime)))
 		set my statusItem to it
 	end tell
@@ -385,11 +388,11 @@ to buildScriptControls() -- build the controls for a script popover - returns bo
 	if current is in {"", missing value} or lexicon is missing value then set my userScript to ""
 	if lexicon is missing value then return false -- no scripts found
 	if current is in {"", missing value} then set current to "– No script selected –"
-	set promptLabel to makeLabel at {15, 50} given stringValue:"Action script:"
+	set promptLabel to makeLabel at {15, 50} given stringValue:"Alarm script:"
 	set popup to makePopupButton at {103, 44} given itemList:(lexicon's allKeys()) as list, title:current
-	set cancelButton to makeButton at {10, 15} given title:"Cancel", action:"scriptPopover:", keyEquivalent:(character id 27)
-	set showButton to makeButton at {120, 15} given title:"Show Folder", action:"scriptPopover:"
-	set setButton to makeButton at {230, 15} given title:"Set", action:"scriptPopover:", keyEquivalent:return
+	set cancelButton to makeButton at {10, 15} given dimensions:{95, 24}, title:"Cancel", action:"scriptPopover:", keyEquivalent:(character id 27)
+	set showButton to makeButton at {110, 15} given dimensions:{120, 24}, title:"Show Folder", action:"scriptPopover:"
+	set setButton to makeButton at {235, 15} given dimensions:{95, 24}, title:"Set", action:"scriptPopover:", keyEquivalent:return
 	setPopoverViews for {promptLabel, popup, cancelButton, showButton, setButton} given representedObject:lexicon -- have the controller retain the dictionary of scripts
 	return true -- success
 end buildScriptControls
@@ -401,7 +404,7 @@ to buildIntervalControls() -- build the controls for an interval popover
 	set cautionSlider to makeSlider at {115, 66} given floatValue:cautionValue, trackColor:(second item of textColors)
 	set warningSlider to makeSlider at {115, 41} given floatValue:warningValue, trackColor:(third item of textColors)
 	set cancelButton to makeButton at {10, 15} given title:"Cancel", action:"intervalPopover:", keyEquivalent:(character id 27)
-	set defaultsButton to makeComboButton at {120, 15} for intervalsMenuItems given title:"Presets"
+	set defaultsButton to makeComboButton at {120, 15} for intervalMenuItems given title:"Presets"
 	set setButton to makeButton at {230, 15} given title:"Set", action:"intervalPopover:", keyEquivalent:return
 	setPopoverViews for {cautionLabel, warningLabel, cautionSlider, warningSlider, cancelButton, defaultsButton, setButton}
 end buildIntervalControls
@@ -540,7 +543,8 @@ end updateSlider:
 
 to updateIntervals:sender -- update sliders to combo button selection
 	set {cautionSlider, warningSlider} to my getPopoverControls("NSSlider")
-	set newIntervals to item (sender's tag) of intervalsMenuItems
+	set theItem to item (((thisApp's NSClassFromString("NSComboButton") is missing value) as integer) + 1) of {sender's tag, 1}
+	set newIntervals to item theItem of intervalMenuItems
 	cautionSlider's setFloatValue:(first item of newIntervals)
 	warningSlider's setFloatValue:(second item of newIntervals)
 	my updateSlider:(missing value)
@@ -619,11 +623,11 @@ to getUserScripts() -- get user scripts - returns the current name and a diction
 	return {current, lexicon}
 end getUserScripts
 
-to getSounds() -- get sound names from the system, local, and user sound libraries (NSSearchPathDomainMask of 11)
+to getAllSounds() -- get sound names from the system, local, and user sound libraries (NSSearchPathDomainMask of 11)
 	tell thisApp's NSMutableArray to set {soundList, subList} to {its alloc's init(), its alloc's init()}
 	set libraries to (thisApp's NSSearchPathForDirectoriesInDomains(thisApp's NSLibraryDirectory, 11, true))'s objectEnumerator()
 	repeat with libraryPath in reverse of ((allObjects of libraries) as list)
-		repeat with anItem in ((thisApp's NSFileManager's defaultManager)'s enumeratorAtURL:(thisApp's NSURL's fileURLWithPath:((thisApp's NSString's stringWithString:libraryPath)'s stringByAppendingPathComponent:"Sounds")) includingPropertiesForKeys:(missing value) options:7 errorHandler:(missing value))'s allObjects() -- no directories, package contents, or hidden files
+		repeat with anItem in (getFolderContents from libraryPath given subfolder:"Sounds")
 			set anItem to (anItem's |path|)'s lastPathComponent
 			if (anItem's pathExtension) as text is not in {"", missing value} then (subList's addObject:(anItem's stringByDeletingPathExtension as text))
 		end repeat
@@ -636,6 +640,24 @@ to getSounds() -- get sound names from the system, local, and user sound librari
 		end if
 	end repeat
 	set my actionMenuItems to soundList as list
+	return
+end getAllSounds
+
+to getSounds() -- add sounds from the /Resources/Sounds folder in the app bundle (if present) to the presets
+	if allSounds then return getAllSounds() -- override preset
+	set soundList to thisApp's NSMutableArray's alloc's init()
+	repeat with anItem in (getFolderContents from (thisApp's NSBundle's mainBundle's resourcePath) given subfolder:"Sounds")
+		tell anItem's |path| to if (its pathExtension) as text is not in {"", missing value} then
+			set justTheName to (its lastPathComponent)'s stringByDeletingPathExtension
+			(soundList's addObject:justTheName)
+			set end of bundledSounds to ((thisApp's NSSound's alloc's initWithContentsOfFile:it byReference:true)'s setName:justTheName)
+		end if
+	end repeat
+	if (soundList's |count|()) as integer is not 0 then
+		soundList's insertObject:"" atIndex:0
+		(soundList's setArray:(soundList's sortedArrayUsingSelector:"compare:"))
+		set actionMenuItems to actionMenuItems & (soundList as list)
+	end if
 end getSounds
 
 
@@ -700,13 +722,14 @@ to makeSlider at origin given dimensions:dimensions : {210, 24}, floatValue:floa
 	end tell
 end makeSlider
 
-on makeComboButton at origin for menuItems given dimensions:dimensions : {100, 24}, title:title : "Button", action:action : "updateIntervals:"
+on makeComboButton at origin for menuItems given dimensions:dimensions : {100, 24}, title:title : "Button", action:action : "updateIntervals:" -- macOS 13 Ventura and later
+	if thisApp's NSClassFromString("NSComboButton") is missing value then return (makeButton at origin given dimensions:dimensions, title:"Default", action:action) -- use earlier
 	tell (thisApp's NSMenu's alloc's initWithTitle:"")
 		set {tag, menuTitles} to {0, {}}
 		my (addMenuItem to it without enable given title:"Caution  Warning") -- title/header entry
 		repeat with anItem in menuItems
 			if class of anItem is list and contents of anItem is not {} then
-				set tag to tag + 1 -- used as an index into the intervalsMenuItems list
+				set tag to tag + 1 -- used as an index into the intervalMenuItems list
 				tell anItem to set anItem to " " & my formatFloat(item 1) & "    " & my formatFloat(item 2)
 			end if
 			my (addMenuItem to it given title:anItem, action:action, tag:tag)
@@ -732,15 +755,18 @@ to addMenuItem to theMenu given title:title : (missing value), action:action : (
 		if action is not missing value then its setTarget:me -- target will only be this script
 		if tag is not missing value then its setTag:(tag as integer)
 		if enable is not missing value then its setEnabled:(item (((enable is false) as integer) + 1) of {true, false})
-		if state is not missing value then its setState:(item (((state is true) as integer) + 1) of {0, 1})
+		if state is not missing value then its setState:(item (((state is true) as integer) + 1) of {0, 1}) -- -1 is mixed
 		return it
 	end tell
 end addMenuItem
 
-to formatTime(theSeconds) -- return formatted 24 hour string (hh:mm:ss) from the seconds
+to getFolderContents from posixPath given subfolder:subfolder : "", options:options : 7 -- no hidden, pkg contents, or subfolders
+	return ((current application's NSFileManager's defaultManager)'s enumeratorAtURL:(current application's NSURL's fileURLWithPath:((current application's NSString's stringWithString:posixPath)'s stringByAppendingPathComponent:subfolder)) includingPropertiesForKeys:(missing value) options:options errorHandler:(missing value))'s allObjects()
+end getFolderContents
+
+to formatTime(theSeconds) -- return formatted 24 hour string (hh:mm:ss) from a number of seconds
 	if theSeconds < 0 then set theSeconds to 0
-	if class of theSeconds is integer then tell "000000" & (10000 * (theSeconds mod days div hours) ¬
-		+ 100 * (theSeconds mod hours div minutes) + (theSeconds mod minutes)) ¬
+	tell "000000" & (10000 * (theSeconds mod days div hours) + 100 * (theSeconds mod hours div minutes) + (theSeconds mod minutes)) ¬
 		to return (text -6 thru -5) & ":" & (text -4 thru -3) & ":" & (text -2 thru -1) -- wraps at 24 hours
 end formatTime
 
