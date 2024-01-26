@@ -116,9 +116,10 @@ to addMenuItem to theMenu given title:title : "MenuItem", target:target : missin
 	return menuItem
 end addMenuItem
 
-# Alternate handler to add a menu item to a menu.
-to addAMenuItem to theMenu given title:title : (missing value), action:action : (missing value), theKey:theKey : "", target:target : missing value, tag:tag : (missing value), enable:enable : (missing value), state:state : (missing value) -- given parameters are optional
-	if title is in {"", missing value} then return theMenu's addItem:(thisApp's NSMenuItem's separatorItem)
+# Alternate general-purpose handler to add a menu item to a menu.
+to altAddMenuItem to theMenu given title:title : (missing value), header:header : false, action:action : (missing value), theKey:theKey : "", target:target : missing value, tag:tag : (missing value), enable:enable : (missing value), state:state : (missing value) -- given parameters are optional
+	if title is in {"", missing value} then return theMenu's addItem:(current application's NSMenuItem's separatorItem)
+	tell (current application's NSMenuItem) to if header is true then if (its respondsToSelector:"sectionHeaderWithTitle:") as boolean then return theMenu's addItem:(its sectionHeaderWithTitle:title) -- macOS 14 Sonoma and later
 	tell (theMenu's addItemWithTitle:title action:action keyEquivalent:theKey)
 		if action is not missing value then its setTarget:(item (((target is missing value) as integer) + 1) of {target, me})
 		if tag is not missing value then its setTag:(tag as integer)
@@ -126,7 +127,8 @@ to addAMenuItem to theMenu given title:title : (missing value), action:action : 
 		if state is not missing value then its setState:state -- 1, 0, -1, or NSControlStateValue enum
 		return it
 	end tell
-end addAMenuItem
+end altAddMenuItem
+
 
 # Common menu action - can use sender's title or tag for comparisons.
 on menuAction:sender
