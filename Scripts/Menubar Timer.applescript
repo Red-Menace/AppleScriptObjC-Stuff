@@ -107,8 +107,6 @@ end run
 to initialize() -- set things up
 	readDefaults() -- load preferences
 	getSounds() -- add sounds to the presets (everything if allSounds is true, or from resources in the application bundle)
-	if alarmSetting is not in actionMenuItems and alarmSetting is not in {"Off", "Run Script…"} then my setAlarm:{title:"Basso"} -- no default or sound not present
-	if timeSetting is not in timeMenuItems and timeSetting is not in {"Custom Duration…", "Alarm Time…"} then my setMenuTime:{title:"1 Hour"} -- no default or time not present
 	set {isPaused, flasher} to {true, false}
 	set {countdown, textColors} to {countdownTime, {}}
 	tell thisApp's id to set bundleID to item (((it starts with idPrefix) as integer) + 1) of {my filterID(idPrefix & "." & appName), it}
@@ -293,7 +291,7 @@ to addAlarmMenu(theMenu) -- submenu for the alarm actions
 				my (addMenuItem to it)
 				if contents of aName is not "" then my (addMenuItem to it with header given title:aName)
 			else -- must be the name of a sound file
-				set state to (alarmSetting is aName)
+				set state to (alarmSetting is aName as text)
 				my (addMenuItem to it given title:aName, action:"setAlarm:", state:state)
 				if state then set my alarmSound to (thisApp's NSSound's soundNamed:aName)
 			end if
@@ -618,7 +616,7 @@ to resetCountdown() -- reset the countdown to the current setting (does not stop
 end resetCountdown
 
 to resetTimeMenuState(setting) -- (re)set state for a new time menu setting
-	(timeMenu's itemWithTitle:timeSetting)'s setState:offState -- old
+	tell (timeMenu's itemWithTitle:timeSetting) to if it is not missing value then its setState:offState -- old
 	set my timeSetting to setting
 	my resetCountdown()
 	(timeMenu's itemWithTitle:timeSetting)'s setState:onState -- new
@@ -626,7 +624,7 @@ to resetTimeMenuState(setting) -- (re)set state for a new time menu setting
 end resetTimeMenuState
 
 to resetAlarmMenuState(setting) -- (re)set state for a new alarm menu setting
-	(alarmMenu's itemWithTitle:alarmSetting)'s setState:offState -- old
+	tell (alarmMenu's itemWithTitle:alarmSetting) to if it is not missing value then its setState:offState -- old
 	set my alarmSetting to setting
 	(alarmMenu's itemWithTitle:alarmSetting)'s setState:onState -- new
 end resetAlarmMenuState
