@@ -289,10 +289,9 @@ to addAlarmMenu(theMenu) -- submenu for the alarm actions
 		my (addMenuItem to it given title:"Run Script…", action:"setAlarm:", state:(alarmSetting is "Run Script…"))
 		my (addMenuItem to it)
 		repeat with aName in actionMenuItems -- placed at the end for possible menu extending off the screen
-			set aName to aName as text
-			if aName is "" or aName starts with "%%%" then -- separator or header
+			if contents of aName is in {"", "Bundle Sounds", "User Sounds", "Local Sounds", "System Sounds"} then
 				my (addMenuItem to it)
-				if aName starts with "%%%" then my (addMenuItem to it with header given title:(text 4 thru -1 of aName))
+				if contents of aName is not "" then my (addMenuItem to it with header given title:aName)
 			else -- must be the name of a sound file
 				set state to (alarmSetting is aName)
 				my (addMenuItem to it given title:aName, action:"setAlarm:", state:state)
@@ -679,10 +678,10 @@ to getAllSounds() -- get sound names from the system, local, and user sound libr
 		(subList's removeObjectsInArray:soundList) -- remove names if already in the list
 		if (subList's |count|()) as integer is not 0 then
 			(subList's setArray:(subList's sortedArrayUsingSelector:"compare:"))
-			tell (first word of libraryPath) to set source to item (((it starts with "%%%") as integer) + 1) of {it, text 4 thru -1 of it}
+			set source to (first word of libraryPath)
 			if source ends with "s" then set source to text 1 thru -2 of source -- "User"
 			if source is "Library" then set source to "Local"
-			(subList's insertObject:("%%%" & source & " Sounds") atIndex:0) -- indicate a separatorItem followed by a header
+			(subList's insertObject:(source & " Sounds") atIndex:0) -- indicate a separatorItem followed by a header
 			(soundList's addObjectsFromArray:subList)
 			subList's removeAllObjects()
 		end if
@@ -704,9 +703,9 @@ to getSounds() -- get sounds from all sound libraries or add from the app bundle
 		end if
 	end repeat
 	if (soundList's |count|()) as integer is not 0 then
-		soundList's insertObject:"%%%Extra Sounds" atIndex:0
+		soundList's insertObject:"Bundle Sounds" atIndex:0
 		(soundList's setArray:(soundList's sortedArrayUsingSelector:"compare:"))
-		set beginning of actionMenuItems to "%%%Preset Sounds" -- indicate section title
+		set beginning of actionMenuItems to "Preset Sounds" -- indicate section title
 		set actionMenuItems to actionMenuItems & (soundList as list)
 	end if
 end getSounds
