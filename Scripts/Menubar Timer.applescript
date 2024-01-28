@@ -701,8 +701,8 @@ to getSounds() -- get sounds from all sound libraries or add from the app bundle
 		end if
 	end repeat
 	if (soundList's |count|()) as integer is not 0 then
-		soundList's insertObject:"Bundle Sounds" atIndex:0
 		(soundList's setArray:(soundList's sortedArrayUsingSelector:"compare:"))
+		soundList's insertObject:"Bundle Sounds" atIndex:0
 		set beginning of actionMenuItems to "Preset Sounds" -- indicate section title
 		set actionMenuItems to actionMenuItems & (soundList as list)
 	end if
