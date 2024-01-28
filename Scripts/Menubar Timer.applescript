@@ -289,7 +289,7 @@ to addAlarmMenu(theMenu) -- submenu for the alarm actions
 		my (addMenuItem to it given title:"Run Script…", action:"setAlarm:", state:(alarmSetting is "Run Script…"))
 		my (addMenuItem to it)
 		repeat with aName in actionMenuItems -- placed at the end for possible menu extending off the screen
-			if contents of aName is in {"", "Bundle Sounds", "User Sounds", "Local Sounds", "System Sounds"} then
+			if contents of aName is in {"", "Bundle Sounds", "Preset Sounds", "User Sounds", "Local Sounds", "System Sounds"} then
 				my (addMenuItem to it)
 				if contents of aName is not "" then my (addMenuItem to it with header given title:aName)
 			else -- must be the name of a sound file
