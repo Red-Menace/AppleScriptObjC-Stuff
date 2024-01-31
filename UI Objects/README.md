@@ -51,6 +51,7 @@ Handlers include the following objects/classes:
     * Controller script/class (combined indicator with text fields and cancel button)
 * NSSlider-NSLevelIndicator
 * NSStatusItem †
+* NSSwitch
 * NSTextField (includes NSSecureTextField)
 * NSTextView (includes NSScrollView and wrapping)
 * NSWindow-NSPanel †
