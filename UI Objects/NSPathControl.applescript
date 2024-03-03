@@ -22,7 +22,7 @@ on makePathControl at origin as list given width:width as integer : 200, pathURL
 		if allowedTypes is not {} then set its allowedTypes to allowedTypes
 		its setURL:pathURL
 		its setPlaceholderString:placeholder
-		if action is not missing value then
+		if action is not in {"", "missing value"} then
 			if target is missing value then set target to me -- 'me' can't be used as an optional default
 			its setTarget:target
 			its setDoubleAction:action
