@@ -4,7 +4,7 @@ use framework "Foundation"
 use scripting additions
 
 
-(* example:
+(* NSImageView example:
 property mainWindow : missing value -- globals can also be used
 property imageView : missing value
 
@@ -15,17 +15,17 @@ mainWindow's contentView's addSubview:imageView
 
 
 # Make and return an NSImageView.
-to makeImageView at origin given dimensions:dimensions : {200, 200}, bezel:bezel : false, scaling:scaling : missing value, autoresizingMask:autoresizingMask : missing value, editable:editable : false, cutCopyPaste:cutCopyPaste : false, action:action : missing value, target:target : missing value
+to makeImageView at origin as list given dimensions:dimensions as list : {200, 200}, bezel:bezel as boolean : false, scaling:scaling as integer : 2, autoresizingMask:autoresizingMask as integer : 0, editable:editable as boolean : false, cutCopyPaste:cutCopyPaste as boolean : false, action:action as text : "", target:target : missing value
 	tell (current application's NSImageView's alloc()'s initWithFrame:{origin, dimensions})
-		if bezel is true then its setImageFrameStyle:(current application's NSImageFrameGrayBezel)
-		if scaling is not missing value then its setImageScaling:scaling
-		if autoresizingMask is not missing value then its setAutoresizingMask:autoresizingMask
-		if editable is not false then its setEditable:true
-		if cutCopyPaste is not false then its setAllowsCutCopyPaste:true
-		if action is not missing value then
+		if bezel then its setImageFrameStyle:(current application's NSImageFrameGrayBezel)
+		if scaling is not 2 then its setImageScaling:scaling
+		if autoresizingMask > 0 then its setAutoresizingMask:autoresizingMask
+		its setEditable:editable
+		its setAllowsCutCopyPaste:cutCopyPaste
+		if action is not in {"", "missing value"} then
 			if target is missing value then set target to me -- 'me' can't be used as an optional default
 			its setTarget:target
-			its setAction:(action as text) -- see the following action handler
+			its setAction:action -- see the following action handler
 		end if
 		return it
 	end tell
@@ -41,7 +41,7 @@ end imageAction:
 
 
 #
-# NSImageScaling behavior:
+# NSImageScaling:
 # NSImageScaleProportionallyDown = 0
 # NSImageScaleAxesIndependently = 1
 # NSImageScaleNone = 2
