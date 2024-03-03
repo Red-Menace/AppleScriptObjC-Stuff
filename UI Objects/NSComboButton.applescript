@@ -15,26 +15,26 @@ mainWindow's contentView's addSubview:comboButton
 
 # Make and return a combo button (available since macOS 13.0 Ventura).
 # Menu actions can be an NSMenu or a list of lists, e.g. {{"one", "actionOne:"}, {"two", "actionTwo:"}, ...}.
-to makeComboButton at origin given controlSize:controlSize : 0, buttonStyle:buttonStyle : missing value, buttonFont:buttonFont : missing value, title:title : "Combo Button", image:image : missing value, imageScaling:imageScaling : missing value, menuActions:menuActions : missing value, action:action : "comboButtonAction:", target:target : missing value
+to makeComboButton at origin as list given controlSize:controlSize as integer : 0, buttonStyle:buttonStyle as integer : 0, buttonFont:buttonFont : missing value, title:title as text : "Combo Button", image:image : missing value, imageScaling:imageScaling as integer : 2, menuActions:menuActions as list : {}, action:action as text : "comboButtonAction:", target:target : missing value
 	if action is not missing value then
 		if target is missing value then set target to me -- 'me' can't be used as an optional default
 		set action to (action as text)
 	end if
-	if class of menuActions is list then set menuActions to makeActionMenu for menuActions given target:target
+	if menuActions is not {} then set menuActions to makeActionMenu for menuActions given target:target
 	tell (current application's NSComboButton's comboButtonWithTitle:title image:image |menu|:menuActions target:target action:action)
 		its setFrameOrigin:origin
 		its setControlSize:controlSize -- 0-3 or NSControlSize enum
-		if buttonStyle is not missing value then its setStyle:buttonStyle -- 0-1 or NSComboButtonStyle enum
+		if buttonStyle ≥ 0 then its setStyle:buttonStyle -- 0-1 or NSComboButtonStyle enum
 		if buttonFont is not missing value then its setFont:buttonFont
-		if image is not missing value then if imageScaling is not missing value then its setImageScaling:imageScaling -- 0-3 or NSImageScaling enum
+		if image is not missing value then if imageScaling is not 2 then its setImageScaling:imageScaling -- 0-3 or NSImageScaling enum
 		return it
 	end tell
 end makeComboButton
 
 # Make and return a menu from a list of list items containing a title and an action selector.
 # If actionItems is a list of names or the action selector is missing the default will be used.
-to makeActionMenu for actionItems given target:target
-	tell (current application's NSMenu's alloc's initWithTitle:"Button Actions")
+to makeActionMenu for actionItems as list given target:target
+	tell (current application's NSMenu's alloc()'s initWithTitle:"Button Actions")
 		set menuTitles to {}
 		repeat with anItem in actionItems
 			if anItem is in {"", {}, missing value} then -- separator
@@ -69,4 +69,27 @@ end comboButtonAction:
 on alternateButtonAction:sender
 	display dialog "The combo button menu item " & quoted form of ((sender's title) as text) & " was pressed." with title "Alternate Action" buttons {"OK"} default button 1 giving up after 5
 end alternateButtonAction:
+
+
+#
+# NSComboButtonStyle:
+# NSComboButtonStyleSplit = 0
+# NSComboButtonStyleUnified = 1
+#
+
+#
+# NSImageScaling:
+# NSImageScaleProportionallyDown = 0
+# NSImageScaleAxesIndependently = 1
+# NSImageScaleNone = 2
+# NSImageScaleProportionallyUpOrDown = 3
+#
+
+#
+# NSControlSize:
+# NSControlSizeRegular = 0
+# NSControlSizeSmall = 1
+# NSControlSizeMini = 2
+# NSControlSizeLarge = 3
+#
 
