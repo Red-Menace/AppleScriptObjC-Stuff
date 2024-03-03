@@ -4,34 +4,31 @@ use framework "Foundation"
 use scripting additions
 
 
-(* example:
+(* NSPathControl example:
 property mainWindow : missing value -- globals can also be used
 property pathControl : missing value
 
-set my pathControl to makePathControl at {100, 100} given popup:true -- given arguments are optional
+set my pathControl to makePathControl at {100, 100} with popup -- given arguments are optional
 mainWindow's contentView's addSubview:pathControl
 *)
 
 
 # Make and return a path control - the pathURL can also be given as posix, HFS, or alias.
-on makePathControl at origin given width:width : 200, pathURL:pathURL : missing value, placeholder:placeholder : missing value, popup:popup : false, allowedTypes:allowedTypes : missing value, editable:editable : true, backgroundColor:backgroundColor : missing value, action:action : "pathAction:", target:target : missing value
+on makePathControl at origin as list given width:width as integer : 200, pathURL:pathURL : missing value, placeholder:placeholder as text : "", popup:popup as boolean : false, allowedTypes:allowedTypes as list : {}, editable:editable as boolean : true, backgroundColor:backgroundColor : missing value, action:action as text : "pathAction:", target:target : missing value
 	if pathURL is (missing value) then set pathURL to (path to desktop folder)
 	if class of pathURL is not current application's NSURL then set pathURL to current application's NSURL's fileURLWithPath:(POSIX path of (pathURL as text))
-	tell (current application's NSPathControl's alloc's initWithFrame:{origin, {width, 25}})
-		if popup is true then
-			its setPathStyle:(current application's NSPathStylePopUp) -- 2 (not editable)
-		else
-			its setPathStyle:(current application's NSPathStyleStandard) -- 0
-		end if
-		if allowedTypes is not (missing value) then set its allowedTypes to (allowedTypes as list)
+	tell (current application's NSPathControl's alloc()'s initWithFrame:{origin, {width, 25}})
+		its setPathStyle:(item ((popup as integer) + 1) of {0, 2}) -- NSPathStyleStandard or NSPathStylePopUp
+		if allowedTypes is not {} then set its allowedTypes to allowedTypes
 		its setURL:pathURL
+		its setPlaceholderString:placeholder
 		if action is not missing value then
 			if target is missing value then set target to me -- 'me' can't be used as an optional default
 			its setTarget:target
-			its setDoubleAction:(action as text)
+			its setDoubleAction:action
 		end if
-		if editable is not false then its setEditable:true
-		if backgroundColor is not missing value then its setBackgroundColor:backgroundColor
+		its setEditable:editable
+		if backgroundColor is not missing value then its setBackgroundColor:backgroundColor -- NSColor
 		return it
 	end tell
 end makePathControl
@@ -43,4 +40,11 @@ on pathAction:sender
 	display dialog "Path Control was double-clicked:" & return & (sender's clickedPathItem's title) as text buttons {"OK"} default button 1
 	-- whatever
 end pathAction:
+
+
+#
+# NSPathStyle:
+# NSPathStyleStandard = 0
+# NSPathStylePopUp = 2
+#
 
