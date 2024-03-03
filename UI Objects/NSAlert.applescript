@@ -330,7 +330,7 @@ to makeGroupButton at origin given radio:radio as boolean : true, width:width as
 	button's setTitle:buttonName
 	button's setFrame:{origin, {width, 24}}
 	button's setLineBreakMode:lineBreakMode
-	if tag is not 0 then button's setTag:tag
+	if tag > 0 then button's setTag:tag
 	if action is not in {"", "missing value"} then
 		if target is missing value then set target to me -- 'me' can't be used as an optional default
 		button's setTarget:target
