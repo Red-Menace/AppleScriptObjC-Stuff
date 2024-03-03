@@ -4,12 +4,11 @@ use framework "Foundation"
 use scripting additions
 
 
-(*
+(* NSPopUpButton example:
 
 	In a pop-up list, the index starts at 0, with the title (automatically) set to the selected item.
 	In a pull-down list, the index starts at 1, with index 0 used to (manually) store the list’s title.
 
-# example:
 property mainWindow : missing value -- globals can also be used
 property popupButton : missing value
 
@@ -19,23 +18,23 @@ mainWindow's contentView's addSubview:popupButton
 
 
 # Make and return an NSPopUpButton.
-# A maxWidth of 0 will size to fit the menu.
-to makePopupButton at origin given maxWidth:maxWidth : missing value, itemList:itemList : {}, title:title : "", pullDown:pullDown : false, tag:tag : missing value, action:action : "popupButtonAction:", target:target : missing value
-	if maxWidth < 0 or maxWidth is in {false, missing value} then set maxWidth to 0
-	tell (current application's NSPopUpButton's alloc's initWithFrame:{origin, {maxWidth, 25}} pullsDown:pullDown)
+to makePopupButton at origin as list given maxWidth:maxWidth as integer : 0, itemList:itemList as list : {}, title:title as text : "", pullDown:pullDown as boolean : false, tag:tag as integer : 0, action:action as text : "popupButtonAction:", target:target : missing value
+	if title is "missing value" then set title to ""
+	if maxWidth < 0 then set maxWidth to 0 -- a maxWidth of 0 will size to fit the menu
+	tell (current application's NSPopUpButton's alloc()'s initWithFrame:{origin, {maxWidth, 25}} pullsDown:pullDown)
 		its addItemsWithTitles:itemList
-		if pullDown is true then -- initial title
+		if pullDown then -- initial title
 			its insertItemWithTitle:"" atIndex:0 -- add placeholder
-			its setTitle:title -- blank title if missing value
+			its setTitle:title
 		else -- initial selection
-			if title is not missing value and title is not in itemList then set title to first item of itemList
+			if title is not "" and title is not in itemList then set title to first item of itemList
 		end if
-		its selectItemWithTitle:title -- blank title (all items deselected) if missing value
-		if tag is not missing value then its setTag:tag
-		if action is not missing value then
+		its selectItemWithTitle:title -- blank title (all items deselected) if empty
+		if tag > 0 then its setTag:tag
+		if action is not in {"", "missing value"} then
 			if target is missing value then set target to me -- 'me' can't be used as an optional default
 			its setTarget:target
-			its setAction:(action as text) -- see the following action handler
+			its setAction:action -- see the following action handler
 		end if
 		if maxWidth is 0 then -- sizeToFit works differently for pull-down (title vs menu), so do it manually
 			set theSize to width of (its |menu|'s |size| as record)
