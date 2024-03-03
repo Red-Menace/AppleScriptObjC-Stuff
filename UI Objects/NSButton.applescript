@@ -17,21 +17,21 @@ mainWindow's contentView's addSubview:button
 # Make and return a NSButton.
 # Note that the control highlight can act differently for various bezel, border, and transparency combinations.
 # Defaults are for a regular rounded momentary push button.
-to makeButton at origin given controlSize:controlSize : 0, width:width : 0, title:title : "Button", alternateTitle:alternateTitle : missing value, titleFont:titleFont : missing value, buttonType:buttonType : missing value, bordered:bordered : true, bezelStyle:bezelStyle : 1, bezelColor:bezelColor : missing value, transparent:transparent : false, tag:tag : missing value, action:action : "buttonAction:", target:target : missing value
-	if width is in {false, missing value} then set width to 0
-	tell (current application's NSButton's alloc's initWithFrame:{origin, {width, 20}}) -- old style
+to makeButton at origin as list given controlSize:controlSize as {integer, list} : 0, width:width as integer : 0, title:title as text : "Button", alternateTitle:alternateTitle as text : "", titleFont:titleFont : missing value, buttonType:buttonType as integer : 7, bordered:bordered as boolean : true, bezelStyle:bezelStyle as integer : 1, bezelColor:bezelColor : missing value, transparent:transparent as boolean : false, tag:tag as integer : 0, action:action as text : "buttonAction:", target:target : missing value
+	if width < 0 then set width to 0
+	tell (current application's NSButton's alloc()'s initWithFrame:{origin, {width, 20}}) -- old style
 		if class of controlSize is list then
 			its setFrameSize:controlSize -- e.g. large transparent button
 		else
 			its setControlSize:controlSize -- 0-3 or NSControlSize enum
 		end if
-		if buttonType is not missing value then its setButtonType:buttonType -- 0-9 or NSButtonType enum
+		if buttonType is not 7 then its setButtonType:buttonType -- 0-9 or NSButtonType enum
 		if titleFont is not missing value then its setFont:titleFont
-		if title is not in {"", missing value} then its setTitle:title
-		if alternateTitle is not in {"", missing value} then its setAlternateTitle:alternateTitle
-		if bordered is true then
+		if title is not in {"", "missing value"} then its setTitle:title
+		if alternateTitle is not in {"", "missing value"} then its setAlternateTitle:alternateTitle
+		if bordered then
 			its setBordered:bordered
-			if bezelStyle is not missing value then
+			if bezelStyle > 0 then
 				its setBezelStyle:bezelStyle -- 1-15 or NSBezelStyle enum
 				if width is 0 then its sizeToFit()
 			end if
@@ -39,12 +39,12 @@ to makeButton at origin given controlSize:controlSize : 0, width:width : 0, titl
 		else
 			its setBordered:false
 		end if
-		if transparent is not missing value then its setTransparent:transparent
-		if tag is not missing value then its setTag:tag
-		if action is not missing value then
+		if transparent then its setTransparent:transparent
+		if tag > 0 then its setTag:tag
+		if action is not in {"", "missing value"} then
 			if target is missing value then set target to me -- 'me' can't be used as an optional default
 			its setTarget:target
-			its setAction:(action as text) -- see the following action handler
+			its setAction:action -- see the following action handler
 		end if
 		return it
 	end tell
