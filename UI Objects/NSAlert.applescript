@@ -10,22 +10,22 @@ use scripting additions
 
 # Minimal handler to make and return an NSAlert (or its button result).
 # Button titles ending with return have destructiveAction set.
-to makeAlert for messageText given infoText:infoText : (missing value), buttons:buttons : {"OK"}, icon:icon : missing value, showing:showing : false
-	tell current application's NSAlert's alloc's init()
-		if messageText is not missing value then its setMessageText:(messageText as text)
-		if infoText is not missing value then its setInformativeText:(infoText as text)
-		repeat with aButton in (buttons as list)
+to makeAlert for messageText as text : "" given infoText:infoText as text : "", buttons:buttons as list : {"OK"}, icon:icon as text : "", showing:showing as boolean : false
+	tell current application's NSAlert's alloc()'s init()
+		if messageText is not in {"", "missing value"} then its setMessageText:messageText
+		if infoText is not in {"", "missing value"} then its setInformativeText:infoText
+		repeat with aButton in buttons
 			set theButton to (its addButtonWithTitle:aButton)
 		end repeat
-		if icon is not missing value then -- set icon
-			set candidate to current application's NSImage's alloc's initByReferencingFile:icon
+		if icon is not in {"", "missing value"} then -- set icon
+			set candidate to current application's NSImage's alloc()'s initByReferencingFile:icon
 			if (candidate's isValid as boolean) then -- file
 				its setIcon:candidate
 			else if icon is "critical" then -- critical style, otherwise informational
 				its setAlertStyle:(current application's NSCriticalAlertStyle)
 			end if
 		end if
-		if showing is true then -- show the alert?
+		if showing then -- show the alert?
 			return its runModal() as integer -- the button result (starts at 1000)
 		else
 			return it -- just the NSAlert object
@@ -50,14 +50,14 @@ script AlertController
 	
 	# The main handler to configure and perform an alert.
 	# The buttonPressed property will be the name of the button pressed (or 'gave up' if time has expired).
-	to performAlert for messageText given messageFont:messageFont : missing value, messageColor:messageColor : missing value, infoText:infoText : "", infoFont:infoFont : missing value, infoColor:infoColor : missing value, buttons:buttons : {"OK"}, icon:icon : missing value, accessory:accessory : missing value, givingUpAfter:givingUpAfter : missing value
-		set my alert to current application's NSAlert's alloc's init()
+	to performAlert for messageText as text : "" given messageFont:messageFont : missing value, messageColor:messageColor : missing value, infoText:infoText as text : "", infoFont:infoFont : missing value, infoColor:infoColor : missing value, buttons:buttons as list : {"OK"}, icon:icon as text : "", accessory:accessory : missing value, givingUpAfter:givingUpAfter as integer : 0
+		set my alert to current application's NSAlert's alloc()'s init()
 		alert's |window|'s setAutorecalculatesKeyViewLoop:true -- hook any added views into the key-view loop
 		alert's setMessageText:adjustFonts(messageText, {messageFont, messageColor, infoFont, infoColor})
-		if infoText is not missing value then alert's setInformativeText:(infoText as text)
-		if givingUpAfter is not in {0, missing value} then set my giveUpTime to givingUpAfter
+		if infoText is not in {"", "missing value"} then alert's setInformativeText:infoText
+		if givingUpAfter > 0 then set my giveUpTime to givingUpAfter
 		set my buttonList to setButtons(buttons) -- use updated button names (destructive action, etc)
-		if icon is not missing value then setIcon(icon)
+		if icon is not in {"", "missing value"} then setIcon(icon)
 		if accessory is not missing value then alert's setAccessoryView:accessory
 		showAlert()
 	end performAlert
@@ -84,7 +84,8 @@ script AlertController
 		set button to (alert's runModal() as integer) - 999 -- first button returns 1000
 		if timer is not missing value then -- reset for next time
 			timer's invalidate()
-			set {timer, timerField, countdown} to {missing value, missing value, missing value}
+			timerField's setStringValue:""
+			set {timer, my countdown} to {missing value, missing value}
 		end if
 		return button
 	end getButtonPress
@@ -97,48 +98,45 @@ script AlertController
 	to adjustFonts(messageText, fontInfo)
 		set {messageFont, messageColor, infoFont, infoColor} to fontInfo
 		tell alert's |window|'s contentView's subviews's item 5
-			if messageText is in {missing value, ""} then -- can't be nil, so just make it really small
+			if messageText is in {"", "missing value"} then -- can't be nil in earlier systems, so just make it really small
 				set messageText to ""
-				its setFont:(current application's NSFont's systemFontOfSize:0.25)
+				its setFont:(current application's NSFont's systemFontOfSize:0.1)
 			else
-				if messageFont is not missing value then its setFont:messageFont
-				if messageColor is not missing value then its setTextColor:messageColor
+				if messageFont is not missing value then its setFont:messageFont -- NSFont
+				if messageColor is not missing value then its setTextColor:messageColor -- NSColor
 			end if
 		end tell
 		tell alert's |window|'s contentView's subviews's item 6
-			if infoFont is not missing value then its setFont:infoFont
-			if infoColor is not missing value then its setTextColor:infoColor
+			if infoFont is not missing value then its setFont:infoFont -- NSFont
+			if infoColor is not missing value then its setTextColor:infoColor -- NSColor
 		end tell
-		return messageText as text
+		return messageText
 	end adjustFonts
 	
 	# Set the alert button(s).
-	# The key equivalent for the first button is return, any button titled "Cancel" is escape.
+	# Key equivalents are return for right/top button, escape for button titled "Cancel", first button has focus.
 	# Button names ending with return have their hasDestructiveAction property set.
-	to setButtons(buttons)
+	to setButtons(buttons as list)
 		set buttonNames to {}
-		set buttons to (current application's NSOrderedSet's orderedSetWithArray:(buttons as list))'s allObjects() as list -- remove duplicates
-		repeat with aButton in buttons
-			set aButton to aButton as text
+		set buttons to (current application's NSOrderedSet's orderedSetWithArray:buttons)'s allObjects() as list -- remove duplicates
+		if buttons is {} then set buttons to {okButton}
+		repeat with indx from 1 to (count buttons)
+			set aButton to (item indx of buttons) as text
 			set destructive to (aButton ends with return)
 			if destructive then set aButton to text 1 thru -2 of aButton
 			if aButton is not in {"", "missing value"} then -- skip missing titles
 				set end of buttonNames to aButton
 				set theButton to (alert's addButtonWithTitle:aButton)
 				if destructive and (theButton's respondsToSelector:"hasDestructiveAction") then (theButton's setHasDestructiveAction:true)
+				if indx is 1 then (theButton's setKeyEquivalent:return)
 			end if
 		end repeat
-		if buttonNames is {} then -- make sure there is at least one
-			set end of buttonNames to okButton
-			set theButton to (alert's addButtonWithTitle:okButton)
-		end if
-		alert's |window|'s setInitialFirstResponder:theButton
 		return buttonNames
 	end setButtons
 	
 	# Set the alert icon to one of the defaults or an image file.
-	to setIcon(icon)
-		if icon is missing value then return
+	to setIcon(icon as text)
+		if icon is in {"", "missing value"} then return
 		if icon is "critical" then
 			alert's setAlertStyle:(current application's NSCriticalAlertStyle)
 		else if icon is in {"informational", "warning"} then
@@ -146,15 +144,15 @@ script AlertController
 		else if icon is "caution" then
 			set alert's icon to current application's NSImage's imageNamed:(current application's NSImageNameCaution)
 		else -- from a file
-			set iconImage to current application's NSImage's alloc's initByReferencingFile:(icon as text)
+			set iconImage to current application's NSImage's alloc()'s initByReferencingFile:icon
 			if (iconImage is not missing value) and (iconImage's isValid as boolean) then set alert's icon to iconImage
 		end if
 	end setIcon
 	
 	# Set up the timer textField and give up timer.
-	to setupTimer(giveUpTime)
-		if class of giveUpTime is not in {integer, real} or giveUpTime < 1 then return missing value
-		set my timerField to current application's NSTextField's alloc's initWithFrame:{{0, 0}, {40, 20}}
+	to setupTimer(giveUpTime as integer)
+		if giveUpTime < 1 then return missing value
+		set my timerField to current application's NSTextField's alloc()'s initWithFrame:{{0, 0}, {40, 20}}
 		timerField's setBordered:false
 		timerField's setDrawsBackground:false
 		timerField's setFont:(current application's NSFont's fontWithName:"Menlo Bold" |size|:14)
@@ -163,7 +161,7 @@ script AlertController
 		timerField's setToolTip:"Time Remaining"
 		positionTimerField(timerField)
 		tell (current application's NSTimer's timerWithTimeInterval:1 target:me selector:"updateCountdown:" userInfo:(missing value) repeats:true)
-			set countdown to (giveUpTime as integer)
+			set my countdown to giveUpTime
 			timerField's setStringValue:(countdown as text)
 			return it
 		end tell
@@ -176,17 +174,18 @@ script AlertController
 		if timerField is missing value then return
 		set padding to 13
 		alert's layout() -- get current layout
-		set spacing to first item of ((first item of alert's |window|'s contentView's subviews)'s frame as list)
-		timerField's setFrameOrigin:{(first item of spacing) + padding, (second item of spacing) - 18}
+		set {{originX, originY}, {_, _}} to ((first item of alert's |window|'s contentView's subviews)'s frame as list)
+		timerField's setFrameOrigin:{originX + padding, originY - 18}
 		alert's |window|'s contentView's addSubview:timerField
 	end positionTimerField
 	
 	# Update the countdown timer display.
 	to updateCountdown:timer
-		set countdown to countdown - 1
+		set my countdown to countdown - 1
 		if countdown ≤ 0 then -- stop and reset for next time
 			timer's invalidate()
-			set {timer, my timerField, my countdown} to {missing value, missing value, missing value}
+			timerField's setStringValue:""
+			set {timer, my countdown} to {missing value, missing value}
 			current application's NSApp's abortModal()
 		else
 			timerField's setStringValue:(countdown as text)
@@ -228,32 +227,46 @@ end run
 to doStuff() -- UI stuff needs to be done on the main thread
 	try
 		# use 'makeAlert' handler
-		set theButtons to {"One", "Two", "Cancel"}
+		set theButtons to {"Foo", "Bar", "Cancel"}
 		
-		set theAlert to (makeAlert for "Simple Alert" given infoText:"whatever", icon:"/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns", buttons:theButtons)
-		theAlert's setAccessoryView:(current application's NSView's alloc's ¬
-			initWithFrame:(current application's NSMakeRect(0, 0, 800, 0))) -- make wider
-		theAlert's |window|'s orderFront:me -- show it
-		theAlert's |window|'s setFrameOrigin:{0, 300} -- move it
-		set indx to (theAlert's runModal() as integer) - 999 -- run it (the first button is 1000)
-		if item indx of theButtons is AlertController's cancelButton then error number -128 -- manually cancel
+		tell (makeAlert for "Simple Alert" given infoText:"whatever", icon:"/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns", buttons:theButtons)
+			its setAccessoryView:(current application's NSView's alloc()'s ¬
+				initWithFrame:(current application's NSMakeRect(0, 0, 800, 0))) -- make wider
+			its (|window|'s orderFront:me) -- show it
+			its (|window|'s setFrameOrigin:{0, 300}) -- move it
+			set indx to (its runModal() as integer) - 999 -- run it (the first button is 1000)
+			log item indx of theButtons
+			if item indx of theButtons is "Cancel" then error number -128 -- manually cancel
+		end tell
 		
 		# use AlertController script object/class
-		set theButtons to {"OK", "Test" & return, missing value, "One", "One", "One"}
+		set theButtons to {"OK", "Test" & return, missing value, "One", "Cancel", "One", "Foo", "Bar"}
 		set loremText to "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque vestibulum venenatis velit, non commodo diam pretium sed. Etiam viverra erat a lacus molestie id euismod magna lacinia. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Vestibulum ac augue magna, eu pharetra leo. Donec tortor tortor, tristique in ornare nec, feugiat vel justo. Nunc iaculis interdum pellentesque. Quisque vel rutrum nibh. Phasellus malesuada ipsum quis diam ullamcorper rutrum. Nullam tincidunt porta ante, in aliquet odio molestie eget. Donec mollis, nibh euismod pulvinar fermentum, magna nunc consectetur risus, id dictum odio leo non velit. Vestibulum vitae nunc pulvinar augue commodo sollicitudin."
+		set accessory to makeButtonGroup at {0, 0} with radio given boxWidth:350, itemList:{"foo", "bar 0123456789012345678901234567890" & return, "baz", "One", "Two"} -- example
 		
-		set accessory to makeButtonGroup at {0, 0} with radio given boxWidth:350, itemList:{"foo", "bar 0123456789012345678901234567890" & return, "baz"} -- example
-		AlertController's (performAlert for "Alert" given infoText:loremText, infoColor:(current application's NSColor's orangeColor), buttons:theButtons, accessory:accessory, givingUpAfter:10)
-		# performSelectorOnMainThread doesn't return anything
-		set response to {AlertController's buttonPressed, accessoryValues(accessory)} -- whatever
-		
-		tell AlertController's alert -- alter the script's NSAlert object
-			its setMessageText:"AlertController's alert can be altered and run again" -- use API
-			its setInformativeText:""
+		tell AlertController
+			# show initial alert
+			its (performAlert for "Alert" given infoText:loremText, infoColor:(current application's NSColor's orangeColor), buttons:theButtons, accessory:accessory, givingUpAfter:10)
+			my (setResponse from it given value:my accessoryValues(accessory))
+			log response
+			
+			tell its alert -- alter the script's NSAlert object
+				its setMessageText:"AlertController's alert can be altered and run again" -- use API
+				its setInformativeText:""
+				(its first item of buttons)'s setKeyEquivalent:return -- reset default and cancel key equivalents
+				repeat with aButton in rest of (its buttons as list)
+					if aButton's title as text is AlertController's cancelButton then
+						(aButton's setKeyEquivalent:(character id 27))
+						exit repeat
+					end if
+				end repeat
+			end tell
+			
+			# show altered alert	
+			its showAlert() -- use script to show it again and update button pressed
+			my (setResponse from it without cancel given value:my accessoryValues(accessory))
+			log response
 		end tell
-		AlertController's showAlert() -- use script to show it again and update button pressed
-		set response to {AlertController's buttonPressed, accessoryValues(accessory)} -- whatever
-		log response -- whatever
 		
 	on error errmess
 		display alert "Error with doing stuff" message errmess
@@ -265,11 +278,18 @@ end doStuff
 #	Example accessory view handlers
 ##################################################
 
+# Set the alert response - cancel argument determines if an error is thrown for the cancel button.
+on setResponse from alert given value:value : missing value, cancel:cancel as boolean : true
+	set value to item (((alert's buttonPressed is alert's cancelButton) as integer) + 1) of {value, missing value}
+	set my response to {button:alert's buttonPressed, accessory:value} -- whatever
+	if button of response is alert's cancelButton and cancel then error number -128 -- manual cancel
+end setResponse
+
 # Return a record (or list of records) for the accessory view item(s).
 # Customized for the accessory view UI item(s) created in the makeButtonGroup handler below.
 on accessoryValues(accessory)
 	if accessory is missing value then return missing value
-	set values to current application's NSMutableDictionary's alloc's init()
+	set values to current application's NSMutableDictionary's alloc()'s init()
 	repeat with aView in (accessory's contentView's subviews)
 		tell values to setValue:(aView's state) forKey:(aView's title)
 	end repeat
@@ -277,16 +297,16 @@ on accessoryValues(accessory)
 end accessoryValues
 
 # Make and return an NSBox containing a group of checkbox or radio buttons.
-on makeButtonGroup at origin given radio:radio : true, boxWidth:boxWidth : 100, itemList:itemList : {}, title:title : "", titlePosition:titlePosition : 0, lineBreakMode:lineBreakMode : 5, baseTag:baseTag : missing value, action:action : "buttonGroupAction:", target:target : missing value
-	set {buttonHeight, padding, tag} to {24, 15, missing value}
+on makeButtonGroup at origin as list given radio:radio as boolean : true, boxWidth:boxWidth : 100, itemList:itemList as list : {}, title:title as text : "", titlePosition:titlePosition as integer : 0, lineBreakMode:lineBreakMode as integer : 5, baseTag:baseTag as integer : 0, action:action as text : "buttonGroupAction:", target:target : missing value
+	set {buttonHeight, padding, tag} to {24, 15, 0}
 	set boxHeight to (count itemList) * buttonHeight + padding
 	if titlePosition is not 0 then set boxHeight to boxHeight + 12 -- box + default label height
-	set theBox to current application's NSBox's alloc's initWithFrame:{origin, {boxWidth, boxHeight}}
-	if title is not in {"", missing value} then theBox's setTitle:(title as text)
+	set theBox to current application's NSBox's alloc()'s initWithFrame:{origin, {boxWidth, boxHeight}}
+	if title is not in {"", "missing value"} then theBox's setTitle:title
 	theBox's setTitlePosition:titlePosition
 	set itemList to (current application's NSOrderedSet's orderedSetWithArray:itemList)'s allObjects() as list -- remove duplicates
 	repeat with itemIndex from 1 to (count itemList)
-		if baseTag is not missing value then set tag to baseTag + itemIndex -- group using a base tag
+		if baseTag is not 0 then set tag to baseTag + itemIndex -- group using a base tag
 		tell (makeGroupButton at origin given radio:radio, buttonName:(item itemIndex of itemList), lineBreakMode:lineBreakMode, tag:tag, action:action, target:target)
 			(its setFrame:{{padding, (itemIndex - 1) * buttonHeight}, {boxWidth - (padding * 2), buttonHeight}})
 			(theBox's addSubview:it)
@@ -296,14 +316,13 @@ on makeButtonGroup at origin given radio:radio : true, boxWidth:boxWidth : 100, 
 end makeButtonGroup
 
 # Make an individual checkbox or radio button.
-to makeGroupButton at origin given radio:radio : true, width:width : 100, buttonName:buttonName : "Button", lineBreakMode:lineBreakMode : 5, tag:tag : missing value, action:action : "buttonGroupAction:", target:target : missing value
-	if action is not missing value and target is missing value then set target to me
+to makeGroupButton at origin given radio:radio as boolean : true, width:width as real : 100, buttonName:buttonName as text : "Button", lineBreakMode:lineBreakMode as integer : 5, tag:tag as integer : 0, action:action as text : "buttonGroupAction:", target:target : missing value
+	if action is not in {"", "missing value"} and target is missing value then set target to me
 	if radio then
-		set button to current application's NSButton's radioButtonWithTitle:"" target:target action:(action as text)
+		set button to current application's NSButton's radioButtonWithTitle:"" target:target action:action
 	else
-		set button to current application's NSButton's checkboxWithTitle:"" target:target action:(action as text)
+		set button to current application's NSButton's checkboxWithTitle:"" target:target action:action
 	end if
-	set buttonName to buttonName as text
 	if buttonName ends with return then -- set/check the button
 		button's setState:(current application's NSOnState) # NSControlStateValueOn
 		set buttonName to text 1 thru -2 of buttonName
@@ -311,11 +330,11 @@ to makeGroupButton at origin given radio:radio : true, width:width : 100, button
 	button's setTitle:buttonName
 	button's setFrame:{origin, {width, 24}}
 	button's setLineBreakMode:lineBreakMode
-	if tag is not missing value then button's setTag:tag
-	if action is not missing value then
+	if tag is not 0 then button's setTag:tag
+	if action is not in {"", "missing value"} then
 		if target is missing value then set target to me -- 'me' can't be used as an optional default
 		button's setTarget:target
-		button's setAction:(action as text)
+		button's setAction:action
 	end if
 	return button
 end makeGroupButton
@@ -326,10 +345,10 @@ on buttonGroupAction:sender
 end buttonGroupAction:
 
 # Return a record of the button titles and states from the enclosing box.
-to getGroupButtons from buttonGroupView given onlySelected:onlySelected : true
-	set buttons to current application's NSMutableDictionary's alloc's init()
+to getGroupButtons from buttonGroupView given onlySelected:onlySelected as boolean : true
+	set buttons to current application's NSMutableDictionary's alloc()'s init()
 	repeat with anItem in buttonGroupView's contentView's subviews
-		if (anItem's state) as integer is 1 or onlySelected is false then ¬
+		if (anItem's state) as integer is 1 or onlySelected then ¬
 			tell buttons to setValue:(anItem's state) forKey:(anItem's title)
 	end repeat
 	return buttons as record
