@@ -306,7 +306,7 @@ on makeButtonGroup at origin as list given radio:radio as boolean : true, boxWid
 	theBox's setTitlePosition:titlePosition
 	set itemList to (current application's NSOrderedSet's orderedSetWithArray:itemList)'s allObjects() as list -- remove duplicates
 	repeat with itemIndex from 1 to (count itemList)
-		if baseTag is not 0 then set tag to baseTag + itemIndex -- group using a base tag
+		if baseTag > 0 then set tag to baseTag + itemIndex -- group using a base tag
 		tell (makeGroupButton at origin given radio:radio, buttonName:(item itemIndex of itemList), lineBreakMode:lineBreakMode, tag:tag, action:action, target:target)
 			(its setFrame:{{padding, (itemIndex - 1) * buttonHeight}, {boxWidth - (padding * 2), buttonHeight}})
 			(theBox's addSubview:it)
