@@ -22,7 +22,7 @@ mainWindow's contentView's addSubview:switch
 # A label should also be added, as the control has no title of its own.
 to makeSwitch at origin as list given controlSize:controlSize as integer : 0, state:state as integer : 0, tag:tag as integer : 0, action:action as text : "switchAction:", target:target : missing value
 	tell (current application's NSSwitch's alloc()'s initWithFrame:{origin, {42, 25}}) -- just size for largest
-		its setControlSize:controlSize -- 0-2 or NSControlSize enum
+		if controlSize > 0 then its setControlSize:controlSize -- 0-2 or NSControlSize enum
 		if tag > 0 then its setTag:tag
 		if action is not in {"", "missing value"} then
 			if target is missing value then set target to me -- 'me' can't be used as an optional default
