@@ -43,7 +43,7 @@ to makeSlider at origin as list given dimensions:dimensions as list : {150, 26},
 		its sendActionOn:(current application's NSEventMaskLeftMouseUp) -- comment for continuous
 		if controlSize is not missing value then its setControlSize:controlSize -- 0-4 or NSControlSize enum
 		if fillColor is not missing value then its setTrackFillColor:fillColor -- NSColor
-		if tag is not missing value then its setTag:tag
+		if tag > 0 then its setTag:tag
 		if circular then
 			its setSliderType:(current application's NSSliderTypeCircular)
 		else
@@ -83,19 +83,17 @@ end sliderAction:
 # Make and return a level indicator.
 # Similar to a slider, with more display styles but without user adjustment.
 # Default is continous 0-10, with tickmarks at each value.
-to makeLevelIndicator at origin as list given dimensions:dimensions as list : {150, 24}, indicatorStyle:indicatorStyle : 1, controlSize:controlSize : missing value, vertical:vertical as boolean : false, minValue:minValue as real : 0, maxValue:maxValue as real : 10, warningValue:warningValue : missing value, criticalValue:criticalValue : missing value, fillColor:fillColor : missing value, warningColor:warningColor : missing value, criticalColor:criticalColor : missing value, tickMarks:tickMarks as integer : 11, majorTickMarks:majorTickMarks as integer : 0, tickMarkPosition:tickMarkPosition : 0
-	tell current application's NSLevelIndicator's alloc's init()
+to makeLevelIndicator at origin as list given dimensions:dimensions as list : {150, 24}, indicatorStyle:indicatorStyle : 1, controlSize:controlSize as integer : 0, vertical:vertical as boolean : false, minValue:minValue as real : 0, maxValue:maxValue as real : 10, warningValue:warningValue as real : 0, criticalValue:criticalValue as real : 0, fillColor:fillColor : missing value, warningColor:warningColor : missing value, criticalColor:criticalColor : missing value, tickMarks:tickMarks as integer : 11, majorTickMarks:majorTickMarks as integer : 0, tickMarkPosition:tickMarkPosition as integer : 0
+	tell current application's NSLevelIndicator's alloc()'s init()
 		its setFrame:{origin, dimensions}
 		its setLevelIndicatorStyle:indicatorStyle -- 0-3 or NSLevelIndicatorStyle enum
-		if controlSize is not missing value then its setControlSize:controlSize -- 0-4 or NSControlSize enum
+		if controlSize > 0 then its setControlSize:controlSize -- 0-4 or NSControlSize enum
 		if vertical then its setFrameRotation:90 -- adjust origin accordingly
 		try
 			its setMinValue:minValue
 			its setMaxValue:maxValue
-			if warningValue is missing value then set warningValue to maxValue * 0.5 -- default 50%
-			its setWarningValue:(warningValue as real)
-			if criticalValue is missing value then set criticalValue to maxValue * 0.8 -- default 80%
-			its setCriticalValue:(criticalValue as real)
+			its setWarningValue:(item (((warningValue > 0) as integer) + 1) of {maxValue * 0.5, warningValue}) -- default 50%
+			its setCriticalValue:(item (((criticalValue > 0) as integer) + 1) of {maxValue * 0.8, criticalValue}) -- default 80%
 		on error errmess -- incorrect value setting
 			log errmess -- display alert errmess
 		end try
