@@ -23,7 +23,7 @@ to makeButton at origin as list given controlSize:controlSize as {integer, list}
 		if class of controlSize is list then
 			its setFrameSize:controlSize -- e.g. large transparent button
 		else
-			its setControlSize:controlSize -- 0-3 or NSControlSize enum
+			if controlSize > 0 then its setControlSize:controlSize -- 0-3 or NSControlSize enum
 		end if
 		if buttonType is not 7 then its setButtonType:buttonType -- 0-9 or NSButtonType enum
 		if titleFont is not missing value then its setFont:titleFont
