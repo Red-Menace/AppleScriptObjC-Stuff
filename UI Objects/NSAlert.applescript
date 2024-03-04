@@ -98,7 +98,7 @@ script AlertController
 	to adjustFonts(messageText, fontInfo)
 		set {messageFont, messageColor, infoFont, infoColor} to fontInfo
 		tell alert's |window|'s contentView's subviews's item 5
-			if messageText is in {"", "missing value"} then -- can't be nil in earlier systems, so just make it really small
+			if messageText is in {"", "missing value"} then -- space always used in earlier systems, so just make it small
 				set messageText to ""
 				its setFont:(current application's NSFont's systemFontOfSize:0.1)
 			else
@@ -331,11 +331,6 @@ to makeGroupButton at origin given radio:radio as boolean : true, width:width as
 	button's setFrame:{origin, {width, 24}}
 	button's setLineBreakMode:lineBreakMode
 	if tag > 0 then button's setTag:tag
-	if action is not in {"", "missing value"} then
-		if target is missing value then set target to me -- 'me' can't be used as an optional default
-		button's setTarget:target
-		button's setAction:action
-	end if
 	return button
 end makeGroupButton
 
