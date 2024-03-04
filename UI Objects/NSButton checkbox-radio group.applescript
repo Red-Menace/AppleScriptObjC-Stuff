@@ -1,5 +1,4 @@
 
-
 use AppleScript version "2.5" -- Sierra (10.12) or later for new enumerations
 use framework "Foundation"
 use scripting additions
@@ -59,7 +58,7 @@ to makeGroupButton at origin as list given radio:radio as boolean : true, contro
 		set buttonName to text 1 thru -2 of buttonName
 	end if
 	button's setTitle:buttonName
-	button's setControlSize:controlSize -- 0-3 or NSControlSize enum
+	if controlSize > 0 then button's setControlSize:controlSize -- 0-3 or NSControlSize enum
 	button's setFrame:{origin, {0, 24}}
 	button's setLineBreakMode:lineBreakMode
 	button's sizeToFit()
