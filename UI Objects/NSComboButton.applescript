@@ -23,8 +23,8 @@ to makeComboButton at origin as list given controlSize:controlSize as integer : 
 	if menuActions is not {} then set menuActions to makeActionMenu for menuActions given target:target
 	tell (current application's NSComboButton's comboButtonWithTitle:title image:image |menu|:menuActions target:target action:action)
 		its setFrameOrigin:origin
-		its setControlSize:controlSize -- 0-3 or NSControlSize enum
-		if buttonStyle ≥ 0 then its setStyle:buttonStyle -- 0-1 or NSComboButtonStyle enum
+		if controlSize > 0 then its setControlSize:controlSize -- 0-3 or NSControlSize enum
+		if buttonStyle > 0 then its setStyle:buttonStyle -- 0-1 or NSComboButtonStyle enum
 		if buttonFont is not missing value then its setFont:buttonFont
 		if image is not missing value then if imageScaling is not 2 then its setImageScaling:imageScaling -- 0-3 or NSImageScaling enum
 		return it
