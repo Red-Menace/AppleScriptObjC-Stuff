@@ -4,8 +4,9 @@
 	
 		• The statusItem title will show a countdown time with an icon and tooltip indicating if it is a duration or alarm time - the time setting will be shown when the timer is stopped, but will change to the time remaining when the timer is started.  Note that while the duration and alarm times both wrap at 24 hours, the duration will be from when the timer is started, while the alarm time will only match one time per day.  When the countdown reaches 0 the statusItem title will flash until the timer is stopped or restarted.
 	
-		• While the timer is running, the time remaining is shown in normal (green), caution (orange), and warning (red) colors.  These are from adjustable percentages of the intervalMaximum duration (default 3600 seconds/1 hour), or of the time setting if it is less than intervalMaximum.  Normal-to-caution and caution-to-warning interval settings can be made with sliders or by choosing a preset from a combo button - setting a percentage to zero will disable that color, and setting both to zero will disable all colors.
-		
+		• While the timer is running, the time remaining is shown in normal (green), caution (orange), and warning (red) colors.  These are from adjustable percentages of the intervalMaximum duration (default 3600 seconds/1 hour), or of the time setting if it is less than intervalMaximum.
+		• Normal-to-caution and caution-to-warning interval settings can be made with sliders or by choosing from a "Presets" combo button (if available, otherwise the "Default" button will use the first item in the intervalMenuItems list).  Setting a percentage to zero will disable that color, and setting both to zero will disable all colors.
+	
 		• Preset (menu item) times can be customized by placing the desired items in the list for the timeMenuItems property.  The items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and countdownTime properties for the matching initial default as desired.
 	
 		• Preset (menu item) sounds can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the default preset.  Set the alarmSetting property for the matching initial default as desired.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play until the timer is stopped or restarted.
@@ -19,14 +20,16 @@
 					Returning "quit" will cause the statusItem application to quit.
 					Returning "restart" will restart the timer (unless using an alarm time, since it will have expired).
 					Returning "continue" will let the countdown continue if using alternate actions (experimental).
-		         
+	
 		• A property (optionClick) is included to enable different functionality when option/right-clicking the statusItem.  When true, a handler (doOptionClick) will be called instead of showing the menu.  This can be used for something separate from the menu such as an about panel (default), help/instructions, etc.
 	
 		• Save as a stay-open application, and code sign or make the script read-only to keep accessibility permissions.
 		• Add a LSUIElement key to the application's Info.plist to make it an agent with no app menu or dock tile (background only).  In the event an invisible background app crashes, the /Applications/Utilities/Activity Monitor.app can be used to quit.
-		
+	
 		• Multiple timers are not supported, but multiple applications can be created with different names and bundle identifiers to keep the title, preferences, and script folders separate.
 	
+		• Cocoa classes used include NSStatusBar, NSScreen, NSWindow, NSView, NSViewController, NSMenu, NSMenuItem, NSTimer, NSUserDefaults, NSFileManager, NSEvent, NSMutableArray, NSMutableDictionary, NSMutableAttributedString, NSSound, NSColor, NSPopover, NSDatePicker, NSButton, NSTextField, NSSlider, NSPopupButton, and NSComboButton.
+		
 		Finally, note that when running from a script editor, if the script is recompiled, any statusItem left in the menu bar will remain - but will no longer function - until the script editor is restarted.  Also, errors may fail silently, so when debugging you can add beep or try statements, display a dialog, etc.
 *)
 
@@ -39,7 +42,7 @@ use scripting additions
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
 property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first (disabled) menu item as a title
-property version : 3.6 -- macOS 13 Ventura or later (not tested, but may run in some earlier versions)
+property version : 3.6 -- macOS 13 Ventura or later for NSComboButton (not tested, but may run in some earlier versions)
 
 # Cocoa API references
 property thisApp : current application
@@ -234,7 +237,7 @@ to buildStatusItem() -- build the menu bar status item
 	tell (thisApp's NSStatusBar's systemStatusBar's statusItemWithLength:(thisApp's NSVariableStatusItemLength))
 		set my statusItem to it
 		its (button's setFont:titleFont)
-		its (button's setImagePosition:(thisApp's NSImageLeft))
+		its (button's setImagePosition:(thisApp's NSImageLeft)) -- for clock and alarm clock images
 		its (button's setTitle:(my formatTime(countdownTime)))
 		if optionClick then -- menu will be set in in the button action
 			its (button's setTarget:me)
@@ -372,7 +375,7 @@ to setPopoverViews for controls as list given title:title as text : "", represen
 			set klass to thisApp's NSStringFromClass(aControl's |class|()) as text
 			set end of my popoverControls to {klass, contents of aControl} -- new list of controls in the order declared
 		end repeat
-		its setFrameSize:{maxWidth + 11, maxHeight + 13} -- extra padding at top and right
+		its setFrameSize:{maxWidth + 11, maxHeight + 13} -- padding at top and right
 		popover's setContentSize:(second item of its frame())
 	end tell
 	popover's setContentViewController:viewController
@@ -441,7 +444,7 @@ end buildIntervalControls
 # Action Handlers            #
 ##############################
 
-# Be careful if using multiple editors - the "type" term is handled differently; Script Editor will remove any escaping
+# BE CAREFUL if using multiple editors - the "type" term is handled differently, e.g. Script Editor will remove escaping.
 on statusItemAction:_sender -- handle option/right-click
 	if not optionClick then return
 	set eventType to (thisApp's NSApp's currentEvent's |type|()) as integer -- pay attention to the escaping for "type"
@@ -577,7 +580,7 @@ to updateSlider:sender -- update slider changes
 	if sender is in {missing value, warningSlider} then warningLabel's setStringValue:("Warning: " & formatFloat(warningSlider's floatValue))
 end updateSlider:
 
-to updateIntervals:sender -- update sliders to combo button selection if available
+to updateIntervals:sender -- update sliders to combo button selection if available, otherwise just first item of intervalMenuItems
 	set {cautionSlider, warningSlider} to my getPopoverControls("NSSlider")
 	set theItem to item (((thisApp's NSClassFromString("NSComboButton") is missing value) as integer) + 1) of {sender's tag, 1}
 	set newIntervals to item theItem of intervalMenuItems
@@ -674,7 +677,7 @@ to getUserScripts() -- get user scripts - returns the current name and a diction
 end getUserScripts
 
 to getAllSounds() -- get sound names from the system, local, and user sound libraries (NSSearchPathDomainMask of 11)
-	tell thisApp's NSMutableArray to set {soundList, subList} to {its alloc()'s init(), its alloc's init()}
+	tell thisApp's NSMutableArray to set {soundList, subList} to {its alloc()'s init(), its alloc()'s init()}
 	repeat with libraryPath in reverse of (((thisApp's NSSearchPathForDirectoriesInDomains(thisApp's NSLibraryDirectory, 11, true))'s objectEnumerator())'s allObjects as list)
 		repeat with anItem in (getFolderContents from libraryPath given subfolder:"Sounds")
 			set anItem to (anItem's |path|)'s lastPathComponent
@@ -806,11 +809,11 @@ end makeComboButton
 # General-purpose Handlers   #
 ##############################
 
-# Add a menuItem to a menu - sectionHeaderWithTitle: is only available in macOS 14+, so an attributedString is used for a header.
+# Add a menuItem to a menu - sectionHeaderWithTitle: convenience method is for macOS 14+, so an attributedString is used.
 to addMenuItem to theMenu given title:title as text : "", header:header as boolean : false, action:action as text : "", theKey:theKey as text : "", tag:tag as integer : 0, enable:enable : (missing value), state:state : (missing value) -- given parameters are optional
 	if action is in {"", "missing value"} then set action to missing value
 	if title is in {"", "missing value"} then return theMenu's addItem:(current application's NSMenuItem's separatorItem)
-	if header is true then tell (theMenu's addItemWithTitle:"" action:(missing value) keyEquivalent:"")
+	if header then tell (theMenu's addItemWithTitle:"" action:(missing value) keyEquivalent:"")
 		set attrTitle to current application's NSMutableAttributedString's alloc()'s initWithString:title
 		attrTitle's addAttribute:(current application's NSFontAttributeName) value:(current application's NSFont's fontWithName:"System Font Bold" |size|:11) range:{0, attrTitle's |length|()}
 		its setAttributedTitle:attrTitle
