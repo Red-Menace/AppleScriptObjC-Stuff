@@ -30,7 +30,7 @@
 	
 		• Cocoa classes used include NSStatusBar, NSScreen, NSWindow, NSView, NSViewController, NSMenu, NSMenuItem, NSTimer, NSUserDefaults, NSFileManager, NSEvent, NSMutableArray, NSMutableDictionary, NSMutableAttributedString, NSSound, NSColor, NSPopover, NSDatePicker, NSButton, NSTextField, NSSlider, NSPopupButton, and NSComboButton.
 		
-		Finally, note that when running from a script editor, if the script is recompiled, any statusItem left in the menu bar will remain - but will no longer function - until the script editor is restarted.  Also, errors may fail silently, so when debugging you can add beep or try statements, display a dialog, etc.
+		Finally, note that when running from a script editor, in Sonoma the datePicker action does not get called, and if the script is recompiled, any statusItem left in the menu bar will remain (but will no longer function) until the script editor is restarted.  Also, errors may fail silently, so when debugging you can add beep or try statements, display a dialog, etc.
 *)
 
 
