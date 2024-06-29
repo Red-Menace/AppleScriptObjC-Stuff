@@ -19,7 +19,7 @@ mainWindow's contentView's addSubview:scrollView
 
 
 # Make and return an NSTextView.
-to makeTextView at origin given dimensions:dimensions : {200, 28}, textString:textString : "Testing", textFont:textFont : missing value, textColor:textColor : missing value, backgroundColor:backgroundColor : missing value, drawsBackground:drawsBackground : missing value, editable:editable : missing value, selectable:selectable : missing value
+to makeTextView at (origin as list) given dimensions:dimensions as list : {200, 28}, textString:textString as text : "Testing", textFont:textFont : missing value, textColor:textColor : missing value, backgroundColor:backgroundColor : missing value, drawsBackground:drawsBackground : missing value, editable:editable : missing value, selectable:selectable : missing value
 	tell (current application's NSTextView's alloc's initWithFrame:{origin, dimensions})
 		its setAutoresizingMask:(current application's NSViewWidthSizable)
 		its setHorizontallyResizable:true
@@ -35,7 +35,7 @@ to makeTextView at origin given dimensions:dimensions : {200, 28}, textString:te
 end makeTextView
 
 # Make and return an NSScrollView for the given textView.
-to makeScrollView for textView given borderType:borderType : missing value, verticalScroller:verticalScroller : true, wrapping:wrapping : true
+to makeScrollView for textView given borderType:borderType : missing value, verticalScroller:verticalScroller as boolean : true, wrapping:wrapping as boolean : true
 	if textView is missing value then return missing value
 	tell (current application's NSScrollView's alloc's initWithFrame:(textView's frame))
 		its setAutoresizingMask:(((current application's NSViewWidthSizable) as integer) + ((current application's NSViewHeightSizable) as integer))
@@ -50,9 +50,9 @@ end makeScrollView
 # (re)set a wrapping mode for the given textView.
 # The horizontal scroller is set as needed.
 # Note that there needs to be a run loop to update the UI if dynamically changing the wrap mode.
-to setWrapMode for textView given wrapping:wrapping : true
+to setWrapMode for textView given wrapping:wrapping as boolean : true
 	if textView is missing value then return missing value
-	if wrapping is true then -- wrap at textView width
+	if wrapping then -- wrap at textView width
 		set theSize to (textView's enclosingScrollView's contentSize) as list -- NSSize coercion is a bit buggy
 		set theWidth to width of first item of theSize
 		# set theWidth to first item of second item of (textView's frame as list) -- alternate
