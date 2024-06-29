@@ -42,21 +42,20 @@ end doStuff
 # Make and return an NSWindow or NSPanel.
 # Default styleMask includes title, close, and minimize buttons, and is not resizeable.
 # If no origin is given the window will be centered.
-to makeWindow at origin given contentSize:contentSize : {400, 200}, styleMask:styleMask : 15, title:title : "", panel:panel : false, floats:floats : false, hasShadow:hasShadow : true, minimumSize:minimumSize : missing value, maximumSize:maximumSize : missing value, backgroundColor:backgroundColor : missing value
-	if panel is true then
+to makeWindow at (origin as list) given contentSize:contentSize as list : {400, 200}, styleMask:styleMask : 15, title:title as text : "", panel:panel as boolean : false, floats:floats as boolean : false, hasShadow:hasShadow as boolean : true, minimumSize:minimumSize : missing value, maximumSize:maximumSize : missing value, backgroundColor:backgroundColor : missing value
+	if panel then
 		set theClass to current application's NSPanel
 	else
 		set theClass to current application's NSWindow
 	end if
 	tell (theClass's alloc()'s initWithContentRect:{{0, 0}, contentSize} styleMask:styleMask backing:2 defer:true)
-		if origin is in {{}, missing value} then
+		if origin is {} then
 			tell it to |center|()
 		else
 			its setFrameOrigin:origin
 		end if
-		if title is not in {"", missing value} then its setTitle:title
-		if panel is true and floats is true then its setFloatingPanel:true
-		if hasShadow is not true then its setHasShadow:false
+		if title is not "" then its setTitle:title
+		if panel and floats then its setFloatingPanel:true
 		if minimumSize is not missing value then its setContentMinSize:minimumSize
 		if maximumSize is not missing value then its setContentMaxSize:maximumSize
 		if backgroundColor is not missing value then its setBackgroundColor:backgroundColor
