@@ -18,7 +18,7 @@ getGroupButtons from buttonGroup -- get a record of the result
 # Make and return a NSBox containing a group of checkbox or radio buttons.
 # The box size is determined by the width parameter and the number of button items.
 # Buttons are tagged with their order in the list, adding any base amount.
-on makeButtonGroup at origin as list given radio:radio : true, width:width as integer : 300, itemList:itemList as list : {}, title:title as text : "", titlePosition:titlePosition as integer : 0, lineBreakMode:lineBreakMode as integer : 5, baseTag:baseTag as integer : 0, action:action as text : "buttonGroupAction:", target:target : missing value
+on makeButtonGroup at (origin as list) given radio:radio as boolean : true, width:width as integer : 300, itemList:itemList as list : {}, title:title as text : "", titlePosition:titlePosition as integer : 0, lineBreakMode:lineBreakMode as integer : 5, baseTag:baseTag as integer : 0, action:action as text : "buttonGroupAction:", target:target : missing value
 	set {buttonHeight, padding} to {24, 18}
 	set {boxWidth, itemCount} to {width, (count itemList)}
 	set boxHeight to itemCount * buttonHeight + padding
@@ -47,7 +47,7 @@ end makeButtonGroup
 
 # Make an individual checkbox or radio button - the state will be on if the name ends with a return.
 # The image position is to the left of the title (default), other positions are left up to the user.
-to makeGroupButton at origin as list given radio:radio as boolean : true, controlSize:controlSize as integer : 0, buttonName:buttonName as text : "Button", lineBreakMode:lineBreakMode as integer : 5, tag:tag as integer : 0, action:action as text : "buttonGroupAction:", target:target : missing value
+to makeGroupButton at (origin as list) given radio:radio as boolean : true, controlSize:controlSize as integer : 0, buttonName:buttonName as text : "Button", lineBreakMode:lineBreakMode as integer : 5, tag:tag as integer : 0, action:action as text : "buttonGroupAction:", target:target : missing value
 	if radio then
 		set button to current application's NSButton's radioButtonWithTitle:"" target:target action:action
 	else
