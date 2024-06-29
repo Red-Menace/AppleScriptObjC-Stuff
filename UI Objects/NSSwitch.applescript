@@ -35,7 +35,7 @@ end makeSwitch
 
 
 # Make and return a label - the bounds can be used to position the switch.
-to makeLabel at origin as list given labelString:labelString as text : "", maxWidth:maxWidth as integer : 0
+to makeLabel at (origin as list) given labelString:labelString as text : "", maxWidth:maxWidth as integer : 0
 	tell (current application's NSTextField's labelWithString:labelString)
 		its setFrameOrigin:origin
 		its setLineBreakMode:(current application's NSLineBreakByTruncatingMiddle)
