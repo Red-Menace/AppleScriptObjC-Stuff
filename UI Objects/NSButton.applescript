@@ -17,7 +17,7 @@ mainWindow's contentView's addSubview:button
 # Make and return a NSButton.
 # Note that the control highlight can act differently for various bezel, border, and transparency combinations.
 # Defaults are for a regular rounded momentary push button.
-to makeButton at origin as list given controlSize:controlSize as {integer, list} : 0, width:width as integer : 0, title:title as text : "Button", alternateTitle:alternateTitle as text : "", titleFont:titleFont : missing value, buttonType:buttonType as integer : 7, bordered:bordered as boolean : true, bezelStyle:bezelStyle as integer : 1, bezelColor:bezelColor : missing value, transparent:transparent as boolean : false, tag:tag as integer : 0, action:action as text : "buttonAction:", target:target : missing value
+to makeButton at (origin as list) given controlSize:controlSize as {integer, list} : 0, width:width as integer : 0, title:title as text : "Button", alternateTitle:alternateTitle as text : "", titleFont:titleFont : missing value, buttonType:buttonType as integer : 7, bordered:bordered as boolean : true, bezelStyle:bezelStyle as integer : 1, bezelColor:bezelColor : missing value, transparent:transparent as boolean : false, tag:tag as integer : 0, action:action as text : "buttonAction:", target:target : missing value
 	if width < 0 then set width to 0
 	tell (current application's NSButton's alloc()'s initWithFrame:{origin, {width, 20}}) -- old style
 		if class of controlSize is list then
