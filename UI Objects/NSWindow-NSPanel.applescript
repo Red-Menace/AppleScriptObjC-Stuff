@@ -42,12 +42,8 @@ end doStuff
 # Make and return an NSWindow or NSPanel.
 # Default styleMask includes title, close, and minimize buttons, and is not resizeable.
 # If no origin is given the window will be centered.
-to makeWindow at (origin as list) given contentSize:contentSize as list : {400, 200}, styleMask:styleMask : 15, title:title as text : "", panel:panel as boolean : false, floats:floats as boolean : false, hasShadow:hasShadow as boolean : true, minimumSize:minimumSize : missing value, maximumSize:maximumSize : missing value, backgroundColor:backgroundColor : missing value
-	if panel then
-		set theClass to current application's NSPanel
-	else
-		set theClass to current application's NSWindow
-	end if
+to makeWindow at (origin as list) given contentSize:contentSize as list : {400, 200}, styleMask:styleMask as integer : 15, title:title as text : "", isPanel:isPanel as boolean : false, floats:floats as boolean : false, hasShadow:hasShadow as boolean : true, minimumSize:minimumSize as list : {}, maximumSize:maximumSize as list : {}, backgroundColor:backgroundColor : missing value
+	tell current application to set theClass to item ((isPanel as integer) + 1) of {its NSWindow, its NSPanel}
 	tell (theClass's alloc()'s initWithContentRect:{{0, 0}, contentSize} styleMask:styleMask backing:2 defer:true)
 		if origin is {} then
 			tell it to |center|()
@@ -55,9 +51,10 @@ to makeWindow at (origin as list) given contentSize:contentSize as list : {400, 
 			its setFrameOrigin:origin
 		end if
 		if title is not "" then its setTitle:title
-		if panel and floats then its setFloatingPanel:true
-		if minimumSize is not missing value then its setContentMinSize:minimumSize
-		if maximumSize is not missing value then its setContentMaxSize:maximumSize
+		if isPanel and floats then its setFloatingPanel:true
+		its setHasShadow:hasShadow
+		if minimumSize is not {} then its setContentMinSize:minimumSize
+		if maximumSize is not {} then its setContentMaxSize:maximumSize
 		if backgroundColor is not missing value then its setBackgroundColor:backgroundColor
 		its setAutorecalculatesKeyViewLoop:true -- include added items in the key loop
 		return it
