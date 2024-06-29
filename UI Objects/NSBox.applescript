@@ -14,7 +14,7 @@ mainWindow's contentView's addSubview:box
 
 
 # Make and return a NSBox.
-to makeBox at origin as list given dimensions:dimensions as list : {10, 20}, boxType:boxType as integer : 0, title:title as text : "", titlePosition:titlePosition as integer : 0, titleFont:titleFont : missing value, borderColor:borderColor : missing value, borderWidth:borderWidth : missing value, cornerRadius:cornerRadius : missing value, fillColor:fillColor : missing value
+to makeBox at (origin as list) given dimensions:dimensions as list : {10, 20}, boxType:boxType as integer : 0, title:title as text : "", titlePosition:titlePosition as integer : 0, titleFont:titleFont : missing value, borderColor:borderColor : missing value, borderWidth:borderWidth : missing value, cornerRadius:cornerRadius : missing value, fillColor:fillColor : missing value
 	tell (current application's NSBox's alloc()'s initWithFrame:{origin, dimensions})
 		if boxType is not 0 then its setBoxType:boxType -- 0|2|4 or NSBoxType enum
 		if title is not in {"", "missing value"} then its setTitle:title
