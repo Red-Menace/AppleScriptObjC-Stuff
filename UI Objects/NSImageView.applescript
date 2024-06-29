@@ -15,7 +15,7 @@ mainWindow's contentView's addSubview:imageView
 
 
 # Make and return an NSImageView.
-to makeImageView at origin as list given dimensions:dimensions as list : {200, 200}, bezel:bezel as boolean : false, scaling:scaling as integer : 2, autoresizingMask:autoresizingMask as integer : 0, editable:editable as boolean : false, cutCopyPaste:cutCopyPaste as boolean : false, action:action as text : "", target:target : missing value
+to makeImageView at (origin as list) given dimensions:dimensions as list : {200, 200}, bezel:bezel as boolean : false, scaling:scaling as integer : 2, autoresizingMask:autoresizingMask as integer : 0, editable:editable as boolean : false, cutCopyPaste:cutCopyPaste as boolean : false, action:action as text : "", target:target : missing value
 	tell (current application's NSImageView's alloc()'s initWithFrame:{origin, dimensions})
 		if bezel then its setImageFrameStyle:(current application's NSImageFrameGrayBezel)
 		if scaling is not 2 then its setImageScaling:scaling
