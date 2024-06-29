@@ -18,7 +18,7 @@ mainWindow's contentView's addSubview:popupButton
 
 
 # Make and return an NSPopUpButton.
-to makePopupButton at origin as list given maxWidth:maxWidth as integer : 0, itemList:itemList as list : {}, title:title as text : "", pullDown:pullDown as boolean : false, tag:tag as integer : 0, action:action as text : "popupButtonAction:", target:target : missing value
+to makePopupButton at (origin as list) given maxWidth:maxWidth as integer : 0, itemList:itemList as list : {}, title:title as text : "", pullDown:pullDown as boolean : false, tag:tag as integer : 0, action:action as text : "popupButtonAction:", target:target : missing value
 	if title is "missing value" then set title to ""
 	if maxWidth < 0 then set maxWidth to 0 -- a maxWidth of 0 will size to fit the menu
 	tell (current application's NSPopUpButton's alloc()'s initWithFrame:{origin, {maxWidth, 25}} pullsDown:pullDown)
