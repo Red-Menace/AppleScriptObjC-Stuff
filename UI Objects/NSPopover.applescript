@@ -72,7 +72,7 @@ end makeViewController
 ##################################################
 
 # Make and return an NSTextField.
-to makeTextField at origin given dimensions:dimensions : {100, 22}, secure:secure : false, editable:editable : true, selectable:selectable : true, bordered:bordered : false, bezeled:bezeled : false, bezelStyle:bezelStyle : missing value, stringValue:stringValue : missing value, placeholder:placeholder : missing value, lineBreakMode:lineBreakMode : 5, textFont:textFont : missing value, textColor:textColor : missing value, backgroundColor:backgroundColor : missing value, drawsBackground:drawsBackground : true
+to makeTextField at (origin as list) given dimensions:dimensions : {100, 22}, secure:secure : false, editable:editable : true, selectable:selectable : true, bordered:bordered : false, bezeled:bezeled : false, bezelStyle:bezelStyle : missing value, stringValue:stringValue : missing value, placeholder:placeholder : missing value, lineBreakMode:lineBreakMode : 5, textFont:textFont : missing value, textColor:textColor : missing value, backgroundColor:backgroundColor : missing value, drawsBackground:drawsBackground : true
 	set theClass to current application's NSTextField
 	if secure is true then set theClass to current application's NSSecureTextField
 	tell (theClass's alloc()'s initWithFrame:{origin, dimensions})
@@ -95,7 +95,7 @@ to makeTextField at origin given dimensions:dimensions : {100, 22}, secure:secur
 end makeTextField
 
 # Make and return an NSButton.
-to makeButton at origin given dimensions:dimensions : {80, 24}, title:title : "Button", buttonType:buttonType : 7, bezelStyle:bezelStyle : 1, bordered:bordered : true, transparent:transparent : false, alternate:alternate : missing value, tag:tag : missing value, action:action : "buttonAction:", target:target : missing value
+to makeButton at (origin as list) given dimensions:dimensions : {80, 24}, title:title : "Button", buttonType:buttonType : 7, bezelStyle:bezelStyle : 1, bordered:bordered : true, transparent:transparent : false, alternate:alternate : missing value, tag:tag : missing value, action:action : "buttonAction:", target:target : missing value
 	tell (current application's NSButton's alloc's initWithFrame:{origin, dimensions}) -- old style
 		its setTitle:(title as text)
 		its setButtonType:buttonType -- NSButtonType enum
