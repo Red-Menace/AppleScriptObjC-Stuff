@@ -23,7 +23,7 @@ mainWindow's contentView's addSubview:comboButton
 
 # Make and return a combo button (available in macOS 13.0 Ventura and later).
 # Menu actions can be a list of titles, a record of titles and actions, or a NSMenu for more complexity.
-to makeComboButton at origin as list given controlSize:controlSize as integer : 0, buttonStyle:buttonStyle as integer : 0, buttonFont:buttonFont : missing value, title:title as text : "Combo Button", image:image : missing value, imageScaling:imageScaling as integer : 2, menuActions:menuActions : missing value, action:action as text : "comboButtonAction:", target:target : missing value
+to makeComboButton at (origin as list) given controlSize:controlSize as integer : 0, buttonStyle:buttonStyle as integer : 0, buttonFont:buttonFont : missing value, title:title as text : "Combo Button", image:image : missing value, imageScaling:imageScaling as integer : 2, menuActions:menuActions : missing value, action:action as text : "comboButtonAction:", target:target : missing value
 	if class of menuActions is in {list, record} then set menuActions to makeActionMenu for menuActions given target:target
 	if target is missing value then set target to me -- 'me' can't be used as an optional default
 	tell (current application's NSComboButton's comboButtonWithTitle:title image:image |menu|:menuActions target:target action:action)
