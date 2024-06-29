@@ -37,7 +37,7 @@ to makeTextField at origin as list given dimensions:dimensions as list : {}, str
 	end if
 	if textFont is not missing value then textField's setFont:textFont -- NSFont
 	if textColor is not missing value then textField's setTextColor:textColor -- NSColor
-	its setLineBreakMode:lineBreakMode -- 0-5 or NSLineBreakMode enum
+	textField's setLineBreakMode:lineBreakMode -- 0-5 or NSLineBreakMode enum
 	if placeholder is not in {"", "missing value"} then textField's setPlaceholderString:placeholder
 	if dimensions is in {} then -- size to fit
 		textField's setFrameOrigin:origin
