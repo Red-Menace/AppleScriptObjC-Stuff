@@ -14,7 +14,7 @@ mainWindow's contentView's addSubview:combobox
 
 
 # Make and return a combo box.
-to makeCombobox at origin as list given width:width : 200, itemList:itemList as list : {}, placeholder:placeholder as text : "", lineBreakMode:lineBreakMode as integer : 5, tag:tag as integer : 0, action:action as text : "comboAction:", target:target : missing value
+to makeCombobox at (origin as list) given width:width : 200, itemList:itemList as list : {}, placeholder:placeholder as text : "", lineBreakMode:lineBreakMode as integer : 5, tag:tag as integer : 0, action:action as text : "comboAction:", target:target : missing value
 	tell (current application's NSComboBox's alloc()'s initWithFrame:{origin, {width, 25}})
 		its setLineBreakMode:lineBreakMode -- 0-5 or NSLineBreakMode enum
 		its addItemsWithObjectValues:itemList
