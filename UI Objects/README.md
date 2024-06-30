@@ -50,6 +50,7 @@ Handlers include the following objects/classes:
 * NSProgressIndicator †
     * Simple bar/spinner indicator
     * Controller script/class (combined indicator with text fields and cancel button)
+* NSSegmentControl
 * NSSlider-NSLevelIndicator
 * NSStatusItem †
 * NSSwitch
