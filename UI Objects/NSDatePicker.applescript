@@ -8,15 +8,18 @@ use scripting additions
 property mainWindow : missing value -- globals can also be used
 property datePicker : missing value
 
-set my datePicker to makeDatePicker at {20, 20} given dimensions:{100, 50} -- given arguments are optional
+set my datePicker to makeDatePicker at {20, 20} -- given arguments are optional
 mainWindow's contentView's addSubview:datePicker
 *)
 
 
 # Make and return a NSDatePicker.
 # Note that the clock and calendar style will need larger dimensions.
-to makeDatePicker at (origin as list) given dimensions:dimensions : {175, 200}, pickerStyle:pickerStyle as integer : 0, pickerMode:pickerMode as integer : 0, elements:elements as integer : 12, bezeled:bezeled as boolean : false, bordered:bordered as boolean : false, drawsBackground:drawsBackground as boolean : false, textColor:textColor : missing value, dateValue:dateValue : missing value, minDate:minDate : missing value, maxDate:maxDate : missing value, target:target : missing value, action:action : "datePickerAction:"
-	tell (current application's NSDatePicker's alloc()'s initWithFrame:{origin, dimensions})
+# Make and return a NSDatePicker.
+# Note that the clock and calendar style will need larger dimensions.
+to makeDatePicker at (origin as list) given controlSize:controlSize as integer : 0, pickerStyle:pickerStyle as integer : 0, pickerMode:pickerMode as integer : 0, elements:elements as integer : 236, bezeled:bezeled as boolean : false, bordered:bordered as boolean : false, drawsBackground:drawsBackground as boolean : false, textColor:textColor : missing value, dateValue:dateValue : missing value, minDate:minDate : missing value, maxDate:maxDate : missing value, target:target : missing value, action:action : "datePickerAction:"
+	tell (current application's NSDatePicker's alloc()'s initWithFrame:{origin, {0, 0}})
+		its setControlSize:controlSize -- 0-3 or NSControlSize enum
 		its setDatePickerStyle:pickerStyle -- 0-2 or NSDatePickerStyle enum
 		its setDatePickerMode:pickerMode -- 0-1 or NSDatePickerMode enum
 		its setDatePickerElements:elements -- NSDatePickerElementFlags mask
@@ -26,6 +29,7 @@ to makeDatePicker at (origin as list) given dimensions:dimensions : {175, 200}, 
 		if textColor is not missing value then its setTextColor:textColor
 		if dateValue is missing value then set dateValue to (current date) -- 'current date' can't be used as an optional default
 		its setDateValue:dateValue
+		its sizeToFit()
 		if minDate is not missing value then its setMinDate:minDate
 		if maxDate is not missing value then its setMaxDate:maxDate
 		if action is not missing value then
@@ -39,7 +43,6 @@ end makeDatePicker
 
 on datePickerAction:sender
 	set theDate to sender's dateValue as date
-	set my pickerDate to theDate
 	# display dialog "The date picker date is " & theDate & "." buttons {"OK"} default button 1 giving up after 2
 	-- whatever
 end datePickerAction:
