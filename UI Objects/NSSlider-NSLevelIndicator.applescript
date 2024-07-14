@@ -4,7 +4,7 @@ use framework "Foundation"
 use scripting additions
 
 
-(* example:
+(* NSSlider/NSLevelIndicator example:
 property mainWindow : missing value -- globals can also be used
 property slider : missing value
 property levelIndicator : missing value
@@ -20,6 +20,7 @@ mainWindow's contentView's addSubview:levelIndicator
 # Make and return a basic slider control with value range from 0.0 to 1.0.
 to makeBasicSlider at (origin as list) given dimensions:dimensions as list : {150, 26}, controlSize:controlSize : missing value, fillColor:fillColor : missing value, vertical:vertical as boolean : false, initial:initial as real : 0, tag:tag : missing value, target:target : missing value, action:action : "sliderAction:"
 	if action is not in {"", missing value} and target is missing value then set target to me
+	if origin is {} then set origin to {0, 0}
 	tell (current application's NSSlider's sliderWithTarget:target action:action)
 		its setFrame:{origin, dimensions}
 		its sendActionOn:(current application's NSEventMaskLeftMouseUp) -- comment for continuous
@@ -36,6 +37,7 @@ end makeBasicSlider
 # Make and return a slider control.
 # Default is linear 0-10, with tickmarks at each value.
 to makeSlider at (origin as list) given dimensions:dimensions as list : {150, 26}, controlSize:controlSize : missing value, fillColor:fillColor : missing value, circular:circular as boolean : false, minimum:minimum : 0, maximum:maximum : 10, initial:initial : 0, tickMarks:tickMarks as integer : 11, onlyTickMarkValues:onlyTickMarkValues as boolean : false, tag:tag : missing value, target:target : missing value, action:action as text : "sliderAction:"
+	if origin is {} then set origin to {0, 0}
 	if action is not in {"", "missing value"} and target is missing value then set target to me
 	tell (current application's NSSlider's sliderWithValue:initial minValue:minimum maxValue:maximum target:target action:action)
 		its setFrame:{origin, dimensions}
@@ -84,6 +86,7 @@ end sliderAction:
 # Similar to a slider, with more display styles but without user adjustment.
 # Default is continous 0-10, with tickmarks at each value.
 to makeLevelIndicator at (origin as list) given dimensions:dimensions as list : {150, 24}, indicatorStyle:indicatorStyle : 1, controlSize:controlSize as integer : 0, vertical:vertical as boolean : false, minValue:minValue as real : 0, maxValue:maxValue as real : 10, warningValue:warningValue as real : 0, criticalValue:criticalValue as real : 0, fillColor:fillColor : missing value, warningColor:warningColor : missing value, criticalColor:criticalColor : missing value, tickMarks:tickMarks as integer : 11, majorTickMarks:majorTickMarks as integer : 0, tickMarkPosition:tickMarkPosition as integer : 0
+	if origin is {} then set origin to {0, 0}
 	tell current application's NSLevelIndicator's alloc()'s init()
 		its setFrame:{origin, dimensions}
 		its setLevelIndicatorStyle:indicatorStyle -- 0-3 or NSLevelIndicatorStyle enum
