@@ -4,7 +4,7 @@ use framework "Foundation"
 use scripting additions
 
 
-(*	NSSegmentedControl example:
+(* NSSegmentedControl example:
 
 	A segmented control combines the features of buttons and popup buttons, in that each segment can operate as a regular segment button but can also have menus.  These handlers create a labeled segment control, with the individual segment labels, toolTips, and any menu items specified with a list of records with the following keys:
 
@@ -35,6 +35,7 @@ mainWindow's contentView's addSubview:segmentedControl
 # The radio argument sets single or multiple selections.
 # The itemList consists of a list of records containing segment titles and any menus.
 to makeSegmentedControl at (origin as list) given controlSize:controlSize as integer : 0, width:width as integer : 0, segmentStyle:segmentStyle as integer : 0, segmentFill:segmentFill as integer : 2, radio:radio as boolean : true, itemList:itemList as list : {}, action:action as text : "segmentButtonAction:", target:target : missing value
+	if origin is {} then set origin to {0, 0}
 	if target is missing value then set target to me -- 'me' can't be used as an optional default
 	tell current application to set mode to item ((radio as integer) + 1) of {its NSSegmentSwitchTrackingSelectAny, its NSSegmentSwitchTrackingSelectOne}
 	set array to current application's NSArray's arrayWithArray:itemList
