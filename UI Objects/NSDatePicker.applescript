@@ -4,7 +4,7 @@ use framework "Foundation"
 use scripting additions
 
 
-(* example:
+(* NSDatePicker example:
 property mainWindow : missing value -- globals can also be used
 property datePicker : missing value
 
@@ -15,9 +15,8 @@ mainWindow's contentView's addSubview:datePicker
 
 # Make and return a NSDatePicker.
 # Note that the clock and calendar style will need larger dimensions.
-# Make and return a NSDatePicker.
-# Note that the clock and calendar style will need larger dimensions.
 to makeDatePicker at (origin as list) given controlSize:controlSize as integer : 0, pickerStyle:pickerStyle as integer : 0, pickerMode:pickerMode as integer : 0, elements:elements as integer : 236, bezeled:bezeled as boolean : false, bordered:bordered as boolean : false, drawsBackground:drawsBackground as boolean : false, textColor:textColor : missing value, dateValue:dateValue : missing value, minDate:minDate : missing value, maxDate:maxDate : missing value, target:target : missing value, action:action : "datePickerAction:"
+	if origin is {} then set origin to {0, 0}
 	tell (current application's NSDatePicker's alloc()'s initWithFrame:{origin, {0, 0}})
 		its setControlSize:controlSize -- 0-3 or NSControlSize enum
 		its setDatePickerStyle:pickerStyle -- 0-2 or NSDatePickerStyle enum
