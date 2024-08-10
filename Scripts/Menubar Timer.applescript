@@ -7,9 +7,9 @@
 		• While the timer is running, the time remaining is shown in normal (green), caution (orange), and warning (red) colors.  These are from adjustable percentages of the intervalMaximum duration (default 3600 seconds/1 hour), or of the time setting if it is less than intervalMaximum.
 		• Normal-to-caution and caution-to-warning interval settings can be made with sliders or by choosing from a "Presets" combo button (if available, otherwise the "Default" button will use the first item in the intervalMenuItems list).  Setting a percentage to zero will disable that color, and setting both to zero will disable all colors.
 	
-		• Preset (menu item) times can be customized by placing the desired items in the list for the timeMenuItems property.  The items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and countdownTime properties for the matching initial default as desired.
+		• Preset times (menu item) can be customized by placing the desired items in the list for the timeMenuItems property.  The items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and countdownTime properties for the matching initial default as desired.
 	
-		• Preset (menu item) sounds can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the default preset.  Set the alarmSetting property for the matching initial default as desired.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play until the timer is stopped or restarted.
+		• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the default preset.  Set the alarmSetting property for the matching initial default as desired.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play until the timer is stopped or restarted.
 		• A property (allSounds) is included to add an alternative to using preset sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are searched, sorted, and grouped by system > local > user, with duplicate items removed and separatorItems and headers used between sections.
 	
 		• As an alternative to playing an alarm sound, a user script can be run when the countdown reaches 0.  The system's shared ScriptMonitor application will also be launched, which will show an activity statusItem with a gear icon in the menu bar.  This statusItem will have an entry for the script, which contains a cancel button and may include progress (if the script uses the built-in progress statements).
@@ -30,7 +30,7 @@
 	
 		• Cocoa classes used include NSStatusBar, NSScreen, NSWindow, NSView, NSViewController, NSMenu, NSMenuItem, NSTimer, NSUserDefaults, NSFileManager, NSEvent, NSMutableArray, NSMutableDictionary, NSMutableAttributedString, NSSound, NSColor, NSPopover, NSDatePicker, NSButton, NSTextField, NSSlider, NSPopupButton, and NSComboButton.
 		
-		Finally, note that when running from a script editor, if the script is recompiled, any statusItem left in the menu bar will remain (but will no longer function) until the script editor is restarted.  Also, errors may fail silently, so when debugging you can add beep or try statements, display a dialog, etc.
+		Finally, note that when running from a script editor, if the script is recompiled, any statusItem left in the menu bar will remain (but will no longer function) until the script editor is restarted.  Also, errors may fail silently, so when debugging you can add say, beep, or try statements, display a dialog, etc.
 *)
 
 
@@ -42,7 +42,7 @@ use scripting additions
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
 property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first (disabled) menu item as a title
-property version : 3.6 -- macOS 13 Ventura or later for NSComboButton (not tested, but may run in some earlier versions)
+property version : 3.7 -- macOS 13 Ventura or later for NSComboButton (not tested, but may run in some earlier versions)
 
 # Cocoa API references
 property thisApp : current application
@@ -61,7 +61,6 @@ property useStartTime : false -- calculate countdown from the start time vs a ma
 # Option settings
 property optionClick : false -- support statusItem button option/right-click? -- see the doOptionClick handler
 property allSounds : false -- load sounds from all libraries? -- can be a lot depending on what has been installed
-property soundTimeout : 0 -- a countdown time (if > 10 seconds) to discontinue the alarm sound - the statusItem will still flash
 property altActions : false -- experimental support for alternate actions -- see the doAltAction handler
 property testing : false -- a flag to indicate testing so that preferences are not updated, etc
 
@@ -82,10 +81,11 @@ property popoverControls : {} -- this will be a list of the current popover cont
 
 # Preset values
 property intervalMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- color change percentages
-property intervalMaximum : 3600 -- maximum duration to use with the interval percentages
+property intervalMaximum : 3600 -- maximum duration for use with the interval percentages
 property actionMenuItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Sosumi", "Submarine"} -- see allSounds
 property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"}
 property bundledSounds : {} -- this will be a list of instances for any sounds from the application bundle
+property soundTimeout : 0 -- countdown time (if > 10 seconds) to discontinue alarm sound - statusItem will still flash
 
 global userScriptsFolder -- where the user scripts are located
 global titleFont -- font used by the statusItem button title
@@ -101,7 +101,7 @@ global flasher -- a flag used to flash the statusItem button title
 ##############################
 
 on run -- example will run as a stay-open app and from a script editor for testing/development
-	if (name of thisApp) contains "Script" then set my testing to true
+	if (name of thisApp) begins with "Script" then set my testing to true -- Script Editor / Script Debugger
 	if thisApp's NSThread's isMainThread() as boolean then -- app
 		initialize()
 	else -- running from a script editor
@@ -111,27 +111,28 @@ end run
 
 to initialize() -- set things up
 	readDefaults() -- load preferences
-	getSounds() -- everything if allSounds is true, or add any resources in the application bundle to the presets
+	getSounds()
 	set {isPaused, flasher} to {true, false}
 	set {countdown, textColors} to {countdownTime, {}}
-	tell thisApp's id to set bundleID to item (((it starts with idPrefix) as integer) + 1) of {my filterID(idPrefix & "." & appName), it}
+	tell thisApp's id to set bundleID to item (((it begins with idPrefix) as integer) + 1) of {my filterID(idPrefix & "." & appName), it}
 	set userScriptsFolder to POSIX path of ((path to library folder from user domain) as text) & "Application Scripts/" & bundleID & "/"
 	thisApp's NSFileManager's defaultManager's createDirectoryAtPath:userScriptsFolder withIntermediateDirectories:true attributes:(missing value) |error|:(missing value)
-	repeat with aColor in {(thisApp's NSColor's systemGreenColor), (thisApp's NSColor's systemOrangeColor), (thisApp's NSColor's systemRedColor), (thisApp's NSColor's systemGrayColor)} --  normal, caution, warning, flashing
+	repeat with aColor in {(thisApp's NSColor's systemGreenColor), (thisApp's NSColor's systemOrangeColor), (thisApp's NSColor's systemRedColor), (thisApp's NSColor's systemGrayColor)} --  {normal, caution, warning, flashing}
 		set end of my textColors to contents of aColor
 	end repeat
 	set titleFont to thisApp's NSFont's fontWithName:"Courier New Bold" |size|:16 -- boldSystemFontOfSize:14
 	set my attrText to thisApp's NSMutableAttributedString's alloc()'s initWithString:(formatTime(0))
 	attrText's addAttribute:(thisApp's NSFontAttributeName) value:titleFont range:{0, attrText's |length|()}
 	buildStatusItem()
-	setupPopoverStuff()
 	resetCountdown()
+	set {buttonWidth, buttonHeight} to second item of ((statusItem's button's frame) as list) -- button size
+	setupPopoverStuff({buttonWidth, buttonHeight + 1})
 end initialize
 
 to doAlarmAction() -- do something when the countdown reaches 0
 	if alarmSetting is "Run Script…" then
 		try
-			runScript for alarmScript
+			runScript for alarmScript -- given arguments:countdown
 		on error errmess number errnum -- handle a script error
 			showAlert from "doAlarmAction" for errmess given errnum:errnum
 			my startStop:(missing value) -- stop the countdown
@@ -145,7 +146,7 @@ to doAlarmAction() -- do something when the countdown reaches 0
 	end if
 end doAlarmAction
 
-to runScript for posixPath given arguments:arguments as list : {} -- script should be in the userScriptsFolder
+to runScript for (posixPath as text) given arguments:arguments as list : {} -- script must be in the userScriptsFolder
 	set args to ""
 	repeat with anItem in arguments -- prepare arguments for the shell script
 		set args to args & space & quoted form of (anItem as text)
@@ -204,7 +205,7 @@ end terminate
 on quit
 	if timer is not missing value then timer's invalidate()
 	thisApp's NSStatusBar's systemStatusBar's removeStatusItem:statusItem
-	if name of thisApp does not start with "Script" then -- don't update or quit script editor
+	if name of thisApp does not start with "Script" then -- not Script Editor / Script Debugger
 		writeDefaults()
 		continue quit
 	end if
@@ -215,13 +216,14 @@ end quit
 # Delegate Handlers          #
 ##############################
 
-# To handle an option/right click without showing the statusItem menu, the menu is cleared and then reset in the button's action
-# method for a regular left click.  If doing something like quit, menuWillOpen can be used instead since the menu won't matter.
+# To handle an option/right click without showing the statusItem menu, the menu is cleared and then reset
+# in the button's action method for a regular left click.  If doing something like quit, menuWillOpen can
+# be used instead since the menu won't matter.
 on menuDidClose:_sender
 	if optionClick then statusItem's setMenu:(missing value)
 end menuDidClose:
 
-on popoverDidClose:_notification
+on popoverDidClose:_notification -- clear popover stuff
 	popoverWindow's |close|()
 	set my viewController to missing value
 	set my popoverControls to {}
@@ -255,7 +257,7 @@ to buildMenu() -- build a menu for the status item
 		its setDelegate:me -- to handle an option/right-click
 		its setAutoenablesItems:false
 		my (addMenuItem to it without enable given title:appName) -- show the app name for identification
-		my (addMenuItem to it)
+		my (addMenuItem to it) -- separator menu item
 		my (addMenuItem to it given title:"Start", action:"startStop:", tag:100)
 		my (addMenuItem to it without enable given title:"Pause", action:"pauseContinue:", tag:200)
 		my (addMenuItem to it without enable given title:"Reset", action:"resetCountdown")
@@ -277,7 +279,7 @@ to addTimeMenu(theMenu) -- submenu for the countdown times
 		repeat with aTitle in timeMenuItems -- must be a value followed by "Seconds", "Minutes", or "Hours"
 			my (addMenuItem to it given title:aTitle, action:"setMenuTime:", state:(timeSetting is (aTitle as text)))
 		end repeat
-		my (addMenuItem to it)
+		my (addMenuItem to it) -- separator menu item
 		my (addMenuItem to it given title:"Custom Duration…", action:"getTime:", state:(timeSetting is "Custom Duration…"))
 		result's setToolTip:"Custom Countdown Duration"
 		my (addMenuItem to it given title:"Set Alarm…", action:"getTime:", state:(timeSetting is "Set Alarm…"))
@@ -291,7 +293,7 @@ to addAlarmMenu(theMenu) -- submenu for the alarm actions
 		set my alarmMenu to it
 		its setAutoenablesItems:false
 		my (addMenuItem to it given title:"Off", action:"setAlarm:", state:(alarmSetting is "Off"))
-		my (addMenuItem to it)
+		my (addMenuItem to it) -- separator menu item
 		my (addMenuItem to it given title:"Run Script…", action:"setAlarm:", state:(alarmSetting is "Run Script…"))
 		my (addMenuItem to it)
 		repeat with aName in actionMenuItems -- placed at the end for possible menu extending off the screen
@@ -323,7 +325,7 @@ end addSettings
 to setAttributedTitle(theTime) -- set the statusItem button's attributed string title (for colors)
 	attrText's addAttribute:"NSColor" value:(thisApp's NSColor's darkGrayColor) range:{0, attrText's |length|()} -- default
 	attrText's replaceCharactersInRange:{0, attrText's |length|()} withString:formatTime(theTime)
-	set targetTime to item (((timeSetting is "Set Alarm…" or countdownTime > intervalMaximum) as integer) + 1) of {countdownTime, intervalMaximum} -- current duration or maximum - fixed duration removes vagueness for alarm time percentages
+	set targetTime to item (((timeSetting is "Set Alarm…" or countdownTime > intervalMaximum) as integer) + 1) of {countdownTime, intervalMaximum} -- current duration or maximum for alarm time percentages
 	tell colorIntervals to if it is not {0.0, 0.0} then -- start with normal, then overwrite to allow a color disable
 		attrText's addAttribute:"NSColor" value:(first item of textColors) range:{0, attrText's |length|()} -- normal
 		if its first item is not 0.0 and theTime ≤ ((its first item) * targetTime) then attrText's addAttribute:"NSColor" value:(second item of textColors) range:{0, attrText's |length|()} -- caution
@@ -345,9 +347,9 @@ end setAttributedTitle
 # Popover Handlers           #
 ##############################
 
-to setupPopoverStuff()
-	tell (thisApp's NSWindow's alloc()'s initWithContentRect:{{0, 0}, {116, 24}} styleMask:0 backing:2 defer:true)
-		set my positioningWindow to it -- borderless transparent window the same size as the statusItem
+to setupPopoverStuff(positioningSize)
+	tell (thisApp's NSWindow's alloc()'s initWithContentRect:{{0, 0}, positioningSize} styleMask:0 backing:2 defer:true)
+		set my positioningWindow to it -- borderless transparent window the same size as the statusItem button
 		its setReleasedWhenClosed:false
 		its setAlphaValue:0.0
 	end tell
@@ -358,7 +360,7 @@ to setupPopoverStuff()
 	end tell
 end setupPopoverStuff
 
-to setPopoverViews for controls as list given title:title as text : "", representedObject:representedObject : missing value
+to setPopoverViews for (controls as list) given title:title as text : "", representedObject:representedObject : missing value
 	set my popoverControls to {}
 	set my viewController to thisApp's NSViewController's alloc()'s init() -- new controller
 	if representedObject is not missing value then viewController's setRepresentedObject:representedObject
@@ -387,7 +389,7 @@ to showPopover() -- show the popover at the statusItem location
 	set {buttonX, buttonY} to first item of ((statusItem's button's |window|'s frame) as list) -- button origin
 	activate me
 	tell positioningWindow
-		its setFrameOrigin:{buttonX, screenY} -- off top edge so that the popover aligns with menu bar
+		its setFrameOrigin:{buttonX, screenY} -- just off top edge so that the popover aligns with menu bar
 		its makeKeyAndOrderFront:me
 		popover's showRelativeToRect:(thisApp's NSZeroRect) ofView:(its contentView) preferredEdge:7 -- MinY of bounds
 	end tell
@@ -616,7 +618,7 @@ to setAlarmTime(theSeconds)
 	end try
 end setAlarmTime
 
-to resetCountdown() -- reset the countdown to the current setting (does not stop the timer)
+to resetCountdown() -- reset the countdown to the current setting (does not stop any timer)
 	attrText's removeAttribute:"NSBackgroundColor" range:{0, attrText's |length|()}
 	set {flasher, indx} to {false, ((timeSetting is "Set Alarm…") as integer) + 1}
 	set countdown to item indx of {countdownTime, alarmTime}
@@ -723,7 +725,7 @@ end getSounds
 # UI Object Handlers         #
 ##############################
 
-to makeLabel at origin as list given stringValue:stringValue as text : ""
+to makeLabel at (origin as list) given stringValue:stringValue as text : ""
 	tell (thisApp's NSTextField's labelWithString:stringValue)
 		its setFrameOrigin:origin
 		its sizeToFit()
@@ -731,7 +733,7 @@ to makeLabel at origin as list given stringValue:stringValue as text : ""
 	end tell
 end makeLabel
 
-to makeButton at origin as list given dimensions:dimensions as list : {100, 24}, title:title as text : "Button", action:action : (missing value), keyEquivalent:keyEquivalent as text : ""
+to makeButton at (origin as list) given dimensions:dimensions as list : {100, 24}, title:title as text : "Button", action:action : (missing value), keyEquivalent:keyEquivalent as text : ""
 	tell (thisApp's NSButton's buttonWithTitle:title target:me action:action)
 		its setFrame:{origin, dimensions}
 		if keyEquivalent is not in {"", "missing value"} then its setKeyEquivalent:keyEquivalent
@@ -740,7 +742,7 @@ to makeButton at origin as list given dimensions:dimensions as list : {100, 24},
 	end tell
 end makeButton
 
-on makeDatePicker at origin as list given dimensions:dimensions as list : {80, 24}, dateValue:dateValue : missing value
+on makeDatePicker at (origin as list) given dimensions:dimensions as list : {80, 24}, dateValue:dateValue : missing value
 	tell (thisApp's NSDatePicker's alloc()'s initWithFrame:{origin, dimensions})
 		its setDatePickerStyle:(thisApp's NSDatePickerStyleTextFieldAndStepper)
 		its setDatePickerElements:((thisApp's NSDatePickerElementFlagHourMinuteSecond as integer))
@@ -754,7 +756,7 @@ on makeDatePicker at origin as list given dimensions:dimensions as list : {80, 2
 	end tell
 end makeDatePicker
 
-to makePopupButton at origin as list given maxWidth:maxWidth as integer : 224, itemList:itemList as list : {}, title:title as text : "", action:action : "updatePopup:"
+to makePopupButton at (origin as list) given maxWidth:maxWidth as integer : 224, itemList:itemList as list : {}, title:title as text : "", action:action : "updatePopup:"
 	if maxWidth < 0 then set maxWidth to 0
 	tell (thisApp's NSPopUpButton's alloc()'s initWithFrame:{origin, {maxWidth, 25}} pullsDown:true)
 		its setLineBreakMode:(thisApp's NSLineBreakByTruncatingMiddle)
@@ -769,7 +771,7 @@ to makePopupButton at origin as list given maxWidth:maxWidth as integer : 224, i
 	end tell
 end makePopupButton
 
-to makeSlider at origin as list given dimensions:dimensions as list : {210, 24}, floatValue:floatValue as real : 0, trackColor:trackColor : missing value, action:action as text : "updateSlider:"
+to makeSlider at (origin as list) given dimensions:dimensions as list : {210, 24}, floatValue:floatValue as real : 0, trackColor:trackColor : missing value, action:action as text : "updateSlider:"
 	if action is in {"", "missing value"} then set action to missing value
 	tell (thisApp's NSSlider's sliderWithTarget:me action:action)
 		its setFrame:{origin, dimensions}
@@ -781,7 +783,7 @@ to makeSlider at origin as list given dimensions:dimensions as list : {210, 24},
 	end tell
 end makeSlider
 
-on makeComboButton at origin as list for menuItems given dimensions:dimensions as list : {100, 24}, title:title as text : "Button", action:action as text : "updateIntervals:" -- macOS 13 Ventura and later
+on makeComboButton at (origin as list) for menuItems given dimensions:dimensions as list : {100, 24}, title:title as text : "Button", action:action as text : "updateIntervals:" -- macOS 13 Ventura and later
 	if action is in {"", "missing value"} then set action to missing value
 	if thisApp's NSClassFromString("NSComboButton") is missing value then return (makeButton at origin given dimensions:dimensions, title:"Default", action:action) -- framework not available, so just use use a button to reset the default
 	tell (thisApp's NSMenu's alloc()'s initWithTitle:"")
@@ -830,8 +832,8 @@ to addMenuItem to theMenu given title:title as text : "", header:header as boole
 end addMenuItem
 
 # Get the contents of a folder, skipping any sealed extensions - default option 7 is no hidden items, pkg contents, or subfolders.
-to getFolderContents from posixPath as text given subfolder:subfolder as text : "", resourceKeys:resourceKeys as list : {}, options:options as integer : 7 -- given parameters are optional
-	if posixPath starts with "/System/Cryptexes" then return {}
+to getFolderContents from (posixPath as text) given subfolder:subfolder as text : "", resourceKeys:resourceKeys as list : {}, options:options as integer : 7 -- given parameters are optional
+	if posixPath begins with "/System/Cryptexes" then return {}
 	return ((current application's NSFileManager's defaultManager)'s enumeratorAtURL:(current application's NSURL's fileURLWithPath:((current application's NSString's stringWithString:posixPath)'s stringByAppendingPathComponent:subfolder)) includingPropertiesForKeys:resourceKeys options:options errorHandler:(missing value))'s allObjects()
 end getFolderContents
 
@@ -868,7 +870,7 @@ to filterID(candidate)
 end filterID
 
 # Common error dialog.
-to showAlert from aHandler as text for errmess as text given errnum:errnum as text : "", givingUpAfter:giveUpTime as integer : 0 -- given parameters are optional
+to showAlert from (aHandler as text) for (errmess as text) given errnum:errnum as text : "", givingUpAfter:giveUpTime as integer : 0 -- given parameters are optional
 	set handlerText to ""
 	if aHandler is not in {"", missing value} then set handlerText to " in the " & quoted form of aHandler & " handler."
 	if errnum is not "" then set errnum to " (" & errnum & ")"
