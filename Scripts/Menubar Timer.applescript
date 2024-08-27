@@ -74,7 +74,7 @@ property attrText : missing value -- this will be an attributed (color, font, et
 property alarmSound : missing value -- this will be the selected sound
 
 # Popover outlets
-property positioningWindow : missing value -- this will be a window for the popover's positioning view
+property positioningWindow : missing value -- this will be a window to position the popover
 property popover : missing value -- this will be the popover
 property viewController : missing value -- this will be the view controller and view for the current popover controls
 property popoverControls : {} -- this will be a list of the current popover controls
@@ -101,7 +101,7 @@ global flasher -- a flag used to flash the statusItem button title
 ##############################
 
 on run -- example will run as a stay-open app and from a script editor for testing/development
-	if (name of thisApp) begins with "Script" then set my testing to true -- Script Editor / Script Debugger
+	if (name of thisApp) begins with "Script " then set my testing to true -- Script Editor / Script Debugger
 	if thisApp's NSThread's isMainThread() as boolean then -- app
 		initialize()
 	else -- running from a script editor
@@ -125,8 +125,7 @@ to initialize() -- set things up
 	attrText's addAttribute:(thisApp's NSFontAttributeName) value:titleFont range:{0, attrText's |length|()}
 	buildStatusItem()
 	resetCountdown()
-	set {buttonWidth, buttonHeight} to second item of ((statusItem's button's frame) as list) -- button size
-	setupPopoverStuff({buttonWidth, buttonHeight + 1})
+	setupPopoverStuff()
 end initialize
 
 to doAlarmAction() -- do something when the countdown reaches 0
@@ -203,12 +202,17 @@ to terminate() -- used as a selector for the scripting term "quit"
 end terminate
 
 on quit
-	if timer is not missing value then timer's invalidate()
-	thisApp's NSStatusBar's systemStatusBar's removeStatusItem:statusItem
-	if name of thisApp does not start with "Script" then -- not Script Editor / Script Debugger
+	if testing then -- try to clean up when running in script editor
+		tell positioningWindow
+			its setReleasedWhenClosed:true
+			its |close|()
+		end tell
+		if timer is not missing value then timer's invalidate()
+		thisApp's NSStatusBar's systemStatusBar's removeStatusItem:statusItem
+	else
 		writeDefaults()
-		continue quit
 	end if
+	continue quit
 end quit
 
 
@@ -347,11 +351,12 @@ end setAttributedTitle
 # Popover Handlers           #
 ##############################
 
-to setupPopoverStuff(positioningSize)
-	tell (thisApp's NSWindow's alloc()'s initWithContentRect:{{0, 0}, positioningSize} styleMask:0 backing:2 defer:true)
-		set my positioningWindow to it -- borderless transparent window the same size as the statusItem button
+to setupPopoverStuff()
+	set {buttonWidth, buttonHeight} to second item of ((statusItem's button's frame) as list) -- button size
+	tell (thisApp's NSWindow's alloc()'s initWithContentRect:{{0, 0}, {buttonWidth, 1}} styleMask:0 backing:2 defer:true) -- borderless 1 point high transparent window the same width as the statusItem button
+		set my positioningWindow to it
 		its setReleasedWhenClosed:false
-		its setAlphaValue:0.0
+		its setAlphaValue:0.0 -- clear
 	end tell
 	tell thisApp's NSPopover's alloc()'s init()
 		set my popover to it
@@ -389,7 +394,7 @@ to showPopover() -- show the popover at the statusItem location
 	set {buttonX, buttonY} to first item of ((statusItem's button's |window|'s frame) as list) -- button origin
 	activate me
 	tell positioningWindow
-		its setFrameOrigin:{buttonX, screenY} -- just off top edge so that the popover aligns with menu bar
+		its setFrameOrigin:{buttonX, screenY - 25} -- just off bottom edge of menu bar
 		its makeKeyAndOrderFront:me
 		popover's showRelativeToRect:(thisApp's NSZeroRect) ofView:(its contentView) preferredEdge:7 -- MinY of bounds
 	end tell
