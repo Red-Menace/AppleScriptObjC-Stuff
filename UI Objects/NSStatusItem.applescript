@@ -10,8 +10,8 @@ use framework "Foundation"
 use scripting additions
 
 
-(* example:
-property statusItem : missing value -- globals can also be used
+(* NSStatusItem example:
+property statusItem : missing value
 
 set my statusItem to makeStatusItem for "MenuName" -- given arguments are optional
 *)
