@@ -41,9 +41,9 @@ end run
 
 on showPanels() -- UI stuff needs to be done on the main thread
 	try
-		set reply to showSavePanel for "This is an NSSavePanel example" with accessory
+		set my reply to showSavePanel for "This is an NSSavePanel example" with accessory
 		log result
-		set reply to showOpenPanel for "This is an NSOpenPanel example" with accessory and chooseFolders
+		set my reply to showOpenPanel for "This is an NSOpenPanel example" with accessory and chooseFolders
 		log result
 	on error errmess number errnum
 		display alert "Error " & errnum message errmess
