@@ -1,7 +1,9 @@
 
 (*
-	This script provides a formatted "hh:mm:ss" countdown timer in a menu bar statusItem.  It includes menu items to adjust the countdown, alarm time, and action to perform when the countdown expires.  To keep the statusItem title and time settings consistent, the title and countdown/alarm time date pickers use a 24-hour format.  The various timer settings are made from menu selections and a variety of controls in popover dialogs.
+	This script uses NSTimer to implement a repeating timer to count down once per second and provides a formatted "hh:mm:ss" countdown indication in a menu bar statusItem.  The status item includes menu items to adjust the countdown or alarm time and the action to perform when the countdown expires.  Timer settings can be selected from preset menu items or set from NSDatePicker controls presented in popover dialogs.  There is a countdown mode setting for a manual countdown or a check against the current time, but note that NSTimer is not an exact real-time mechanism.  
 	
+		• To keep the statusItem title and time settings consistent, the title and countdown/alarm time date pickers use a 24-hour format.
+		
 		• The statusItem title will show a countdown time with an icon and tooltip indicating if it is a duration or alarm time - the time setting will be shown when the timer is stopped, but will change to the time remaining when the timer is started.  Note that while the duration and alarm times both wrap at 24 hours, the duration will be from when the timer is started, while the alarm time will only match one time per day.  When the countdown reaches 0 the statusItem title will flash until the timer is stopped or restarted.
 	
 		• While the timer is running, the time remaining is shown in normal (green), caution (orange), and warning (red) colors.  These are from adjustable percentages of the intervalMaximum duration (default 3600 seconds/1 hour), or of the time setting if it is less than intervalMaximum.
@@ -9,8 +11,9 @@
 	
 		• Preset times (menu item) can be customized by placing the desired items in the list for the timeMenuItems property.  The items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and countdownTime properties for the matching initial default as desired.
 	
-		• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the default preset.  Set the alarmSetting property for the matching initial default as desired.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play until the timer is stopped or restarted.
-		• A property (allSounds) is included to add an alternative to using preset sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are searched, sorted, and grouped by system > local > user, with duplicate items removed and separatorItems and headers used between sections.
+		• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu.  Set the alarmSetting property for the matching initial default as desired.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play until the timer is stopped or restarted.
+		• A property (allSounds) is used as a flag to add an alternative to using preset sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are searched, sorted, and grouped by system > local > user, with separatorItems and headers used between sections.  Duplicate items are removed - the first matching name will be selected, so system names will override user names, etc.
+		• The Menubar Timer can be used as a metronome by setting the time to zero and using a sound action - for best results a short tone (less than 1 second) should be used.
 	
 		• As an alternative to playing an alarm sound, a user script can be run when the countdown reaches 0.  The system's shared ScriptMonitor application will also be launched, which will show an activity statusItem with a gear icon in the menu bar.  This statusItem will have an entry for the script, which contains a cancel button and may include progress (if the script uses the built-in progress statements).
 		• Although the application is not sandboxed (and AppleScriptObjC can't use NSUserScriptTask anyway), it still expects scripts to be placed in the user's ~/Library/Application Scripts/<bundle-identifier> folder.  The app/script will create this folder as needed, which can also be revealed from the script setting popover.
@@ -74,7 +77,7 @@ property attrText : missing value -- this will be an attributed (color, font, et
 property alarmSound : missing value -- this will be the selected sound
 
 # Popover outlets
-property positioningWindow : missing value -- this will be a window to position the popover
+property positioningWindow : missing value -- this will be a 1 point high window to position the popover
 property popover : missing value -- this will be the popover
 property viewController : missing value -- this will be the view controller and view for the current popover controls
 property popoverControls : {} -- this will be a list of the current popover controls
@@ -82,7 +85,7 @@ property popoverControls : {} -- this will be a list of the current popover cont
 # Preset values
 property intervalMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- color change percentages
 property intervalMaximum : 3600 -- maximum duration for use with the interval percentages
-property actionMenuItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Sosumi", "Submarine"} -- see allSounds
+property actionMenuItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Purr", "Sosumi", "Submarine"} -- see allSounds
 property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"}
 property bundledSounds : {} -- this will be a list of instances for any sounds from the application bundle
 property soundTimeout : 0 -- countdown time (if > 10 seconds) to discontinue alarm sound - statusItem will still flash
@@ -114,7 +117,7 @@ to initialize() -- set things up
 	getSounds()
 	set {isPaused, flasher} to {true, false}
 	set {countdown, textColors} to {countdownTime, {}}
-	tell thisApp's id to set bundleID to item (((it begins with idPrefix) as integer) + 1) of {my filterID(idPrefix & "." & appName), it}
+	tell thisApp's id to set bundleID to item (((it begins with idPrefix) as integer) + 1) of {my filterID(idPrefix & "." & appName), it} -- new or existing
 	set userScriptsFolder to POSIX path of ((path to library folder from user domain) as text) & "Application Scripts/" & bundleID & "/"
 	thisApp's NSFileManager's defaultManager's createDirectoryAtPath:userScriptsFolder withIntermediateDirectories:true attributes:(missing value) |error|:(missing value)
 	repeat with aColor in {(thisApp's NSColor's systemGreenColor), (thisApp's NSColor's systemOrangeColor), (thisApp's NSColor's systemRedColor), (thisApp's NSColor's systemGrayColor)} --  {normal, caution, warning, flashing}
@@ -279,7 +282,7 @@ to addTimeMenu(theMenu) -- submenu for the countdown times
 	tell (thisApp's NSMenu's alloc()'s initWithTitle:"")
 		set my timeMenu to it
 		its setAutoenablesItems:false
-		if testing and timeMenuItems does not contain "10 Seconds" then set beginning of timeMenuItems to "10 Seconds"
+		if testing and timeMenuItems does not contain "10 Seconds (Testing)" then set beginning of timeMenuItems to "10 Seconds (Testing)"
 		repeat with aTitle in timeMenuItems -- must be a value followed by "Seconds", "Minutes", or "Hours"
 			my (addMenuItem to it given title:aTitle, action:"setMenuTime:", state:(timeSetting is (aTitle as text)))
 		end repeat
@@ -301,7 +304,7 @@ to addAlarmMenu(theMenu) -- submenu for the alarm actions
 		my (addMenuItem to it given title:"Run Script…", action:"setAlarm:", state:(alarmSetting is "Run Script…"))
 		my (addMenuItem to it)
 		repeat with aName in actionMenuItems -- placed at the end for possible menu extending off the screen
-			if contents of aName is in {"", "Bundle Sounds", "Preset Sounds", "User Sounds", "Local Sounds", "System Sounds"} then
+			if contents of aName is in {"", "Bundled Sounds", "Preset Sounds", "User Sounds", "Local Sounds", "System Sounds"} then
 				my (addMenuItem to it)
 				if contents of aName is not "" then my (addMenuItem to it with header given title:aName)
 			else -- must be the name of a sound file
@@ -534,10 +537,7 @@ to getCountdownMode:sender -- mode for countdown duration
 	repeat with anItem in (sender's |menu|'s itemArray) as list
 		(anItem's setState:false)
 	end repeat
-	tell (sender's title as text)
-		if it is "Clock" then set my useStartTime to true
-		if it is "Count" then set my useStartTime to false
-	end tell
+	set my useStartTime to ((sender's title as text) is "Clock")
 	sender's setState:true
 end getCountdownMode:
 
@@ -690,7 +690,7 @@ to getAllSounds() -- get sound names from the system, local, and user sound libr
 			set anItem to (anItem's |path|)'s lastPathComponent
 			if (anItem's pathExtension) as text is not in {"", missing value} then (subList's addObject:(anItem's stringByDeletingPathExtension as text))
 		end repeat
-		(subList's removeObjectsInArray:soundList) -- remove names if already in the list
+		(subList's removeObjectsInArray:soundList) -- the first match will be used, so remove names already in the list
 		if (subList's |count|()) as integer is not 0 then
 			(subList's setArray:(subList's sortedArrayUsingSelector:"compare:"))
 			set source to (first word of libraryPath)
@@ -704,7 +704,7 @@ to getAllSounds() -- get sound names from the system, local, and user sound libr
 	set my actionMenuItems to soundList as list
 end getAllSounds
 
-to getSounds() -- get sounds from all sound libraries or add from the app bundle (if present)
+to getSounds() -- add from the app bundle (if present) or from all sound libraries if option is set
 	if allSounds then return getAllSounds() -- override preset
 	set soundList to thisApp's NSMutableArray's alloc()'s init()
 	repeat with anItem in (getFolderContents from (thisApp's NSBundle's mainBundle's resourcePath) given subfolder:"Sounds")
@@ -719,7 +719,7 @@ to getSounds() -- get sounds from all sound libraries or add from the app bundle
 	end repeat
 	if (soundList's |count|()) as integer is not 0 then
 		(soundList's setArray:(soundList's sortedArrayUsingSelector:"compare:"))
-		soundList's insertObject:"Bundle Sounds" atIndex:0
+		soundList's insertObject:"Bundled Sounds" atIndex:0
 		set beginning of actionMenuItems to "Preset Sounds" -- section header - see addAlarmMenu
 		set actionMenuItems to actionMenuItems & (soundList as list)
 	end if
