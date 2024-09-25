@@ -28,7 +28,7 @@ end run
 
 on doStuff() -- do the window stuff
 	try
-		set mainWindow to makeWindow at {} given title:"Testing" -- make it
+		set my mainWindow to makeWindow at {} given title:"Testing" -- make it
 		
 		-- add other elements as desired
 		
