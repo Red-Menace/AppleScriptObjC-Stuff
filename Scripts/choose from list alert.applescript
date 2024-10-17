@@ -2,7 +2,6 @@
 #
 # NSAlert with tableView to approximate "choose from list"
 #
-# Features:
 #	The number of list entries to be shown can be specified so that the dialog won't fill the window
 #		a setting of 0 or missing value will show all, up to the maximum (a scroll bar is shown as needed)
 #	The accessory view width can be specified (it will be clamped between the minimum and maximum)
@@ -44,14 +43,14 @@ to doStuff()
 	try
 		set listItems to {"First", "Peach", "Strawberry", "Pear", "Apple", "A much longer item entry to view the result of the attributed string linebreak setting (remove to use width of other items)", "Grape", "Orange", "Banana", "Cherry", "Tomato", "Last"}
 		# log (choose from list listItems with title "Standard 'Choose from List'" with multiple selections allowed and empty selection allowed) -- for comparison
-		set choices to (choose from listItems given width:400, entries:5, info:"Alert 'Choose from List'", location:{0, 0}) -- given arguments are optional
+		set choices to (choose from listItems given width:400, entries:5, info:"'Choose from List' Alert", location:{0, 0}) -- given arguments are optional
 	on error errmess number errnum
 		display alert "Error " & errnum message errmess
 	end try
 end doStuff
 
 # Set up and show an alert with a tableView accessory view.
-to choose from choiceList given prompt:prompt : "Please make your selection:", info:info : "", location:location : missing value, width:width : 0, entries:entries : 0, multipleSelections:multipleSelections : true
+to choose from (choiceList as list) given prompt:(prompt as text) : "Please make your selection:", info:info as text : "", location:location : {}, width:width as integer : 0, entries:entries as integer : 0, multipleSelections:multipleSelections as boolean : true
 	set choiceArray to (makeDataSource for choiceList) -- the tableView items
 	set accessory to makeScrollingTableView under prompt given width:width, entries:entries, multipleSelections:multipleSelections
 	tell current application's NSAlert's alloc()'s init()
@@ -63,7 +62,7 @@ to choose from choiceList given prompt:prompt : "Please make your selection:", i
 		its (|window|'s setAutorecalculatesKeyViewLoop:true)
 		its setAccessoryView:accessory
 		its (|window|'s setInitialFirstResponder:accessory)
-		if location is not in {false, missing value} then -- show window in order to move it, then continue
+		if location is not {} then -- show window in order to move it, then continue
 			its layout()
 			its (|window|'s orderBack:me)
 			its (|window|'s setFrameTopLeftPoint:(my adjust(location, item 2 of (its |window|'s frame as list))))
@@ -86,7 +85,7 @@ to getChoices(alert, choiceArray)
 end getChoices
 
 # Make and return an NSScrollView containing a single column NSTableView.
-to makeScrollingTableView under header given width:width : 0, entries:entries : 0, multipleSelections:multipleSelections : true
+to makeScrollingTableView under (header as text) given width:width as integer : 0, entries:entries as integer : 0, multipleSelections:multipleSelections as boolean : true
 	if width is 0 then -- auto
 		repeat with anItem in dataSource
 			set theSize to (listItem of (contents of anItem))'s |size|()'s width as integer -- not quite accurate...
@@ -102,7 +101,7 @@ to makeScrollingTableView under header given width:width : 0, entries:entries : 
 	set tableView to makeTableView(current application's NSMakeRect(0, 0, width + 17, height), multipleSelections)
 	tell (current application's NSTableColumn's alloc()'s initWithIdentifier:columnKey)
 		(its setWidth:width)
-		if header is not in {"", missing value} then -- adjust for header
+		if header is not "" then -- adjust for header
 			its (headerCell's setTitle:(header as text))
 			set tweak to 28
 		else
@@ -161,7 +160,7 @@ to makeDataSource for tableItems
 end makeDataSource
 
 # Make and return an attributed string.
-to makeAttributedString for someText given lineBreakMode:lineBreakMode : 5, traitmask:traitmask : missing value, textFont:textFont : missing value, textColor:textColor : missing value
+to makeAttributedString for someText given lineBreakMode:lineBreakMode as integer : 5, traitmask:traitmask : missing value, textFont:textFont : missing value, textColor:textColor : missing value
 	if class of someText is not string or someText is "" then return someText
 	tell current application's NSMutableParagraphStyle's alloc's init()
 		if lineBreakMode is not in {false, missing value} then its setLineBreakMode:lineBreakMode
