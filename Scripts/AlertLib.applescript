@@ -17,6 +17,8 @@ on run -- examples
 	
 	showAlert given arguments:{info:"This is a simple NSAlert example."} -- simple/defaults
 	log result
+	showAlert given arguments:{info:"Select the text field and use arrow keys to scroll.", addedWidth:250, input:loremText, accessoryType:"textfield"}
+	log result
 	showAlert given arguments:{addedWidth:50, title:"This is a test", giveUpTime:15, message:"", input:{"Testing" & return, "Whatever" & return, "A really, really, long label to see how really, really, long labels appear"}, info:"This is a more complex NSAlert example using all arguments.", accessoryType:"checkbox", buttons:{"Cancel", "Wait...", "What?", "OK"}, icon:"stop"} -- everything
 	log result
 end run
@@ -114,7 +116,6 @@ to setButtons:buttons
 		set end of buttonList to okButton
 		set theButton to (alert's addButtonWithTitle:okButton)
 	end if
-	alert's |window|'s setInitialFirstResponder:theButton
 	return buttonList
 end setButtons:
 
@@ -167,7 +168,6 @@ end setAccessory:using:addedWidth:
 on adjustTimerField()
 	if timerField is missing value then return
 	set padding to 13
-	if (system attribute "sys1") > 10 then set padding to 2 -- Big Sur +
 	alert's layout() # get new layout
 	set spacing to first item of ((first item of alert's |window|'s contentView's subviews)'s frame as list)
 	timerField's setFrameOrigin:{(first item of spacing) + padding, (second item of spacing) - 18}
@@ -177,11 +177,8 @@ end adjustTimerField
 # Set up a [secure]textField to get user input.
 # the textField will auto-size around its contents - maximum of 10 lines vertical (scroll with arrow keys)
 on textAccessory:input width:width secure:secure
-	if secure then
-		set field to (current application's NSSecureTextField's alloc's initWithFrame:{{0, 0}, {width, 40}})
-	else
-		set field to (current application's NSTextField's alloc's initWithFrame:{{0, 0}, {width, 40}})
-	end if
+	tell current application to set klass to item ((secure as integer) + 1) of {its NSTextField, its NSSecureTextField}
+	set field to klass's alloc's initWithFrame:{{0, 0}, {width, 40}}
 	tell field
 		set its placeholderString to "Enter text" -- arbitrary
 		set input to input as text
