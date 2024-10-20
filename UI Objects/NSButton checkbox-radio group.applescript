@@ -11,7 +11,7 @@ property buttonGroup : missing value
 set my buttonGroup to makeButtonGroup at {35, 35} without radio given itemList:{"foo", "bar 0123456789012345678901234567890" & return, "baz", "testing", "whatever"} -- given arguments are optional
 mainWindow's contentView's addSubview:buttonGroup
 
-getGroupButtons from buttonGroup -- get a record of the result
+getGroupButtons from buttonGroup -- get a record of the buttonGroup settings
 *)
 
 
@@ -24,7 +24,7 @@ on makeButtonGroup at (origin as list) given radio:radio as boolean : true, widt
 	set boxHeight to itemCount * buttonHeight + padding
 	if titlePosition is not 0 then set boxHeight to boxHeight + 12 -- box + default title height
 	set theBox to current application's NSBox's alloc()'s initWithFrame:{origin, {boxWidth, boxHeight}}
-	if title is not in {"", missing value} then theBox's setTitle:(title as text)
+	if title is not "" then theBox's setTitle:title
 	theBox's setTitlePosition:titlePosition -- 0-6 or NSTitlePosition enum
 	# add any other box settings, such as an autoresizingMask or whatever
 	set itemList to (current application's NSOrderedSet's orderedSetWithArray:itemList)'s allObjects() as list -- remove duplicates
@@ -62,10 +62,9 @@ to makeGroupButton at (origin as list) given radio:radio as boolean : true, cont
 	button's setFrame:{origin, {0, 24}}
 	button's setLineBreakMode:lineBreakMode
 	button's sizeToFit()
-	if tag > 0 then button's setTag:tag
-	if action is not in {"", "missing value"} then
-		if target is missing value then set target to me -- 'me' can't be used as an optional default
-		button's setTarget:target
+	if tag is not 0 then button's setTag:tag
+	if action is not "" then
+		button's setTarget:(item (((target is missing value) as integer) + 1) of {target, me})
 		button's setAction:action
 	end if
 	return button
