@@ -27,8 +27,8 @@ to makeButton at (origin as list) given controlSize:controlSize as {integer, lis
 		end if
 		if buttonType is not 7 then its setButtonType:buttonType -- 0-9 or NSButtonType enum
 		if titleFont is not missing value then its setFont:titleFont
-		if title is not in {"", "missing value"} then its setTitle:title
-		if alternateTitle is not in {"", "missing value"} then its setAlternateTitle:alternateTitle
+		if title is not "" then its setTitle:title
+		if alternateTitle is not "" then its setAlternateTitle:alternateTitle
 		if bordered then
 			its setBordered:bordered
 			if bezelStyle > 0 then
@@ -40,10 +40,9 @@ to makeButton at (origin as list) given controlSize:controlSize as {integer, lis
 			its setBordered:false
 		end if
 		if transparent then its setTransparent:transparent
-		if tag > 0 then its setTag:tag
-		if action is not in {"", "missing value"} then
-			if target is missing value then set target to me -- 'me' can't be used as an optional default
-			its setTarget:target
+		if tag is not 0 then its setTag:tag
+		if action is not "" then
+			its setTarget:(item (((target is missing value) as integer) + 1) of {target, me})
 			its setAction:action -- see the following action handler
 		end if
 		return it
