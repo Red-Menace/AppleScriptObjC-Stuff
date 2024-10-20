@@ -14,17 +14,16 @@ mainWindow's contentView's addSubview:combobox
 
 
 # Make and return a combo box.
-to makeCombobox at (origin as list) given width:width : 200, itemList:itemList as list : {}, placeholder:placeholder as text : "", lineBreakMode:lineBreakMode as integer : 5, tag:tag as integer : 0, action:action as text : "comboAction:", target:target : missing value
+to makeCombobox at (origin as list) given width:width as integer : 200, itemList:itemList as list : {}, placeholder:placeholder as text : "", lineBreakMode:lineBreakMode as integer : 5, tag:tag as integer : 0, action:action as text : "comboAction:", target:target : missing value
 	tell (current application's NSComboBox's alloc()'s initWithFrame:{origin, {width, 25}})
 		its setLineBreakMode:lineBreakMode -- 0-5 or NSLineBreakMode enum
 		its addItemsWithObjectValues:itemList
 		its setCompletes:true -- autocomplete
-		if placeholder is not in {"", missing value} then its setPlaceholderString:placeholder
+		if placeholder is not "" then its setPlaceholderString:placeholder
 		if width ≤ 0 then its sizeToFit() -- set width to the placeholder
-		if tag > 0 then its setTag:tag
-		if action is not in {"", "missing value"} then
-			if target is missing value then set target to me -- 'me' can't be used as an optional default
-			its setTarget:target
+		if tag is not 0 then its setTag:tag
+		if action is not "" then
+			its setTarget:(item (((target is missing value) as integer) + 1) of {target, me})
 			its setAction:action -- see the following action handler
 		end if
 		return it
