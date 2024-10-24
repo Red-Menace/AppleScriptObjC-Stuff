@@ -5,7 +5,7 @@ use scripting additions
 
 
 (* NSComboButton example:
-property mainWindow : missing value -- globals can also be used
+property mainWindow : missing value -- the window that will contain the control
 property comboButton : missing value
 
 # a record to use individual custom action handlers
