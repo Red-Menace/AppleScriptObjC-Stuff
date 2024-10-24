@@ -16,28 +16,27 @@ getGroupButtons from buttonGroup -- get a record of the buttonGroup settings
 
 
 # Make and return a NSBox containing a group of checkbox or radio buttons.
-# The box size is determined by the width parameter and the number of button items.
-# Buttons are tagged with their order in the list, adding any base amount.
-on makeButtonGroup at (origin as list) given radio:radio as boolean : true, width:width as integer : 300, itemList:itemList as list : {}, title:title as text : "", titlePosition:titlePosition as integer : 0, lineBreakMode:lineBreakMode as integer : 5, baseTag:baseTag as integer : 0, action:action as text : "buttonGroupAction:", target:target : missing value
-	set {buttonHeight, padding} to {24, 18}
-	set {boxWidth, itemCount} to {width, (count itemList)}
+# NSControlSize values for controlSize will auto size the box, otherwise normal sized controls will be in a custom width box.
+to makeButtonGroup at (origin as list) given radio:radio as boolean : true, controlSize:controlSize as integer : 0, itemList:itemList as list : {}, title:title as text : "", titlePosition:titlePosition as integer : 0, lineBreakMode:lineBreakMode as integer : 5, baseTag:baseTag as integer : 0, action:action as text : "buttonGroupAction:", target:target : missing value
+	tell (current application's NSMutableOrderedSet's orderedSetWithArray:itemList) -- remove duplicates...
+		its removeObjectsInArray:{"", {}, missing value, "missing value"} -- ...and empty items
+		set itemList to its allObjects() as list
+	end tell
+	set {buttonHeight, padding, tag} to {24, 15, 0}
+	set {width, itemCount} to {controlSize, (count itemList)}
 	set boxHeight to itemCount * buttonHeight + padding
-	if titlePosition is not 0 then set boxHeight to boxHeight + 12 -- box + default title height
-	set theBox to current application's NSBox's alloc()'s initWithFrame:{origin, {boxWidth, boxHeight}}
+	if titlePosition is not 0 then set boxHeight to boxHeight + 12 -- box + default label height
+	set theBox to current application's NSBox's alloc()'s initWithFrame:{origin, {controlSize, boxHeight}}
 	if title is not "" then theBox's setTitle:title
-	theBox's setTitlePosition:titlePosition -- 0-6 or NSTitlePosition enum
-	# add any other box settings, such as an autoresizingMask or whatever
-	set itemList to (current application's NSOrderedSet's orderedSetWithArray:itemList)'s allObjects() as list -- remove duplicates
-	repeat with itemIndex from 1 to itemCount -- items are drawn bottom up, but tagged and indexed in list order
-		set tag to (itemCount - itemIndex) + 1
-		if baseTag > 0 then set tag to tag + baseTag -- group using a base tag
-		tell (makeGroupButton at {0, 0} given radio:radio, buttonName:(item (itemCount - itemIndex + 1) of itemList), lineBreakMode:lineBreakMode, tag:tag, action:action, target:target)
-			if width is 0 then -- size box around longest button title
-				set newWidth to (first item of second item of (its frame as list)) + (padding * 2)
-				if newWidth > boxWidth then set boxWidth to newWidth
-				(theBox's setFrameSize:{boxWidth, buttonHeight * (itemCount + 0.75)})
-			end if
-			(its setFrame:{{10, (itemIndex - 1) * buttonHeight}, {boxWidth - (padding * 2), buttonHeight}})
+	theBox's setTitlePosition:titlePosition
+	repeat with itemIndex from 1 to itemCount
+		if baseTag > 0 then set tag to baseTag + itemIndex -- group using a base tag
+		tell (makeGroupButton at origin given radio:radio, controlSize:width, buttonName:(item itemIndex of itemList), lineBreakMode:lineBreakMode, tag:tag, action:action, target:target)
+			set newWidth to ((current application's NSWidth(its frame)) as integer) + (padding * 2)
+			if newWidth > controlSize then set controlSize to newWidth
+			if width is not in {0, 1, 2, 3} then set controlSize to width
+			(theBox's setFrameSize:{controlSize, buttonHeight * (itemCount + 0.75)}) -- adjust box size
+			(its setFrame:{{10, (itemIndex - 1) * buttonHeight}, {controlSize - (padding * 2), buttonHeight}})
 			(its setRefusesFirstResponder:true) -- initial highlight as desired
 			(theBox's addSubview:it)
 		end tell
@@ -54,14 +53,18 @@ to makeGroupButton at (origin as list) given radio:radio as boolean : true, cont
 		set button to current application's NSButton's checkboxWithTitle:"" target:target action:action
 	end if
 	if buttonName ends with return then -- set/check the button
-		button's setState:(current application's NSOnState) # NSControlStateValueOn
+		button's setState:1 -- NSControlStateValueOn/NSOnState
 		set buttonName to text 1 thru -2 of buttonName
 	end if
 	button's setTitle:buttonName
-	if controlSize > 0 then button's setControlSize:controlSize -- 0-3 or NSControlSize enum
-	button's setFrame:{origin, {0, 24}}
+	button's setFrameOrigin:origin
 	button's setLineBreakMode:lineBreakMode
-	button's sizeToFit()
+	if controlSize is in {0, 1, 2, 3} then -- 0-3 or NSControlSize enum
+		button's setControlSize:controlSize
+		button's sizeToFit()
+	else
+		button's setFrameSize:{controlSize, 24} -- default NSControlSize with custom width
+	end if
 	if tag is not 0 then button's setTag:tag
 	if action is not "" then
 		button's setTarget:(item (((target is missing value) as integer) + 1) of {target, me})
@@ -83,8 +86,8 @@ end buttonGroupAction:
 to getGroupButtons from buttonGroupView given onlySelected:onlySelected as boolean : true
 	set buttons to current application's NSMutableDictionary's alloc()'s init()
 	repeat with anItem in buttonGroupView's contentView's subviews
-		if (anItem's state) as integer is 1 or not onlySelected then ¬
-			tell buttons to setValue:(anItem's state) forKey:(anItem's title) -- or tags, whatever
+		if not onlySelected or (anItem's state) as integer is 1 then ¬
+			tell buttons to setValue:(anItem's state) forKey:(anItem's title) -- tags, whatever
 	end repeat
 	return buttons as record
 end getGroupButtons
