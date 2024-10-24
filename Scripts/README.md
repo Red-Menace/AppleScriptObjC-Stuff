@@ -11,8 +11,6 @@ A few ASObjC scripts demonstrating the usage of various Cocoa classes.  These sh
 	* NSWindow, NSStatusBar, NSMenu, NSTimer, NSTextField, NSMutableAttributedString, NSDictionary, NSFont, NSColor.
 * *MenuBar Timer - a (much) bigger, enhanced version of TimerDisplay that provides a menu bar status item countdown timer with adjustable countdown and alarm times.  When the countdown expires or the alarm time is met, an alarm action can be set to play a sound or run a script.
     * NSStatusBar, NSMenu, NSMenuItem, NSViewController, NSTimer, NSUserDefaults, NSFileManager, NSEvent, NSMutableArray, NSMutableDictionary, NSMutableAttributedString, NSSound, NSColor, NSPopover, NSDatePicker, NSButton, NSTextField, NSSlider, NSPopupButton, NSComboButton.
-* *AlertLib - a NSAlert library.  Performs a NSAlert with optional TextField, ComboBox, CheckBox, or RadioButton accessory views.  Can be used as a script library.
-	* NSAlert, NSTextField, NSSecureTextField, NSComboBox, NSButton, NSTimer, NSBox, NSMutableDictionary, NSImage.
 * *Choose from List Alert - a NSAlert with a tableView accessory view to approximate AppleScript's "choose from list".
    * NSAlert, NSTableView, NSScrollView, NSMutableArray, NSMutableDIctionary, NSMutableAttributedString, NSMutableParagraphStyle
 * *Popover - shows a popover at a button location when it is clicked.
