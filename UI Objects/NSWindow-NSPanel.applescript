@@ -8,7 +8,7 @@ use scripting additions
 property mainWindow : missing value -- this will be the NSWindow object
 
 # script properties
-property failed : missing value -- this will be a record of the message and number of any error
+property failure : missing value -- error record with keys {errorMessage, errorNumber, handlerName}
 
 
 on run -- example can be run as app and from Script Editor
@@ -18,7 +18,7 @@ on run -- example can be run as app and from Script Editor
 		else -- UI stuff needs to be done on the main thread
 			my performSelectorOnMainThread:"doStuff" withObject:(missing value) waitUntilDone:true
 		end if
-		if failed is not missing value then error failed's errmsg number failed's errnum
+		if failure is not missing value then error failure's errorMessage number failure's errorNumber
 		log "done"
 	on error errmsg number errnum
 		display alert "Error " & errnum message errmsg
@@ -34,16 +34,16 @@ on doStuff() -- do the window stuff
 		
 		mainWindow's makeKeyAndOrderFront:me -- show it
 	on error errmsg number errnum
-		set my failed to {errmsg:errmsg, errnum:errnum}
+		set my failure to {errorMessage:errmsg, errorNumber:errnum}
 	end try
 end doStuff
 
 
-# Make and return an NSWindow or NSPanel.
-# Default styleMask includes title, close, and minimize buttons, and is not resizeable.
+# Make and return a NSWindow or NSPanel.
+# Default styleMask includes a title, close and minimize buttons, and is not resizeable.
 # If no origin is given the window will be centered.
-to makeWindow at (origin as list) given contentSize:contentSize as list : {400, 200}, styleMask:styleMask as integer : 15, title:title as text : "", isPanel:isPanel as boolean : false, floats:floats as boolean : false, hasShadow:hasShadow as boolean : true, minimumSize:minimumSize as list : {}, maximumSize:maximumSize as list : {}, backgroundColor:backgroundColor : missing value
-	tell current application to set theClass to item ((isPanel as integer) + 1) of {its NSWindow, its NSPanel}
+to makeWindow at (origin as list) given contentSize:contentSize as list : {400, 200}, styleMask:styleMask as integer : 15, title:title as text : "", panel:panel as boolean : false, floats:floats as boolean : false, aShadow:aShadow as boolean : true, minimumSize:minimumSize as list : {}, maximumSize:maximumSize as list : {}, backgroundColor:backgroundColor : missing value
+	tell current application to set theClass to item ((panel as integer) + 1) of {its NSWindow, its NSPanel}
 	tell (theClass's alloc()'s initWithContentRect:{{0, 0}, contentSize} styleMask:styleMask backing:2 defer:true)
 		if origin is {} then
 			tell it to |center|()
@@ -51,8 +51,8 @@ to makeWindow at (origin as list) given contentSize:contentSize as list : {400, 
 			its setFrameOrigin:origin
 		end if
 		if title is not "" then its setTitle:title
-		if isPanel and floats then its setFloatingPanel:true
-		its setHasShadow:hasShadow
+		if panel and floats then its setFloatingPanel:true
+		its setHasShadow:aShadow
 		if minimumSize is not {} then its setContentMinSize:minimumSize
 		if maximumSize is not {} then its setContentMaxSize:maximumSize
 		if backgroundColor is not missing value then its setBackgroundColor:backgroundColor
