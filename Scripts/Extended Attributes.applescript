@@ -1,17 +1,17 @@
 
 (*
-	Edit select file extended attributes.
+	Edit select file extended attributes that use an array of strings in a binary property list.
 	
-	New items are added, and duplicate items moved, to the beginning of the list.
+	New items are added, and duplicate items moved, to the beginning of the array.
 	Entering a blank item for removal will delete the attribute (after a confirmation dialog).
-	Items beyond the itemLimit will be removed from the end of the list.
+	Items beyond the itemLimit will be removed from the end of the array.
 
-	The kMDItemComment is not stored in Finder's .DS_Store and does not show in its Get Info dialog.
-	The _kMDItemUserTags format is `tagName\n<colorNumber>`, where <colorNumber> (if used) is one of:
-		0 (none), 1 (gray), 2 (green), 3 (purple), 4 (blue), 5 (yellow), 6 (red), or 7 (orange)
-
-	Note that the Finder also keeps track of comments and tags (amongst other things) in its .DS_Store file,
-		independent of extended attributes, so depending on how they are added they may not be in sync.
+	Notes:
+		The Finder also keeps track of comments and tags (amongst other things) in its .DS_Store file,
+			independent of extended attributes, so depending on how they are added they may not be in sync.
+		The _kMDItemUserTags format is `tagName\n<colorNumber>`, where <colorNumber> (if used) is one of:
+			0 (none), 1 (gray), 2 (green), 3 (purple), 4 (blue), 5 (yellow), 6 (red), or 7 (orange)
+		The kMDItemComment is not stored in Finder's .DS_Store and does not show in its Get Info dialog.
 *)
 
 
@@ -22,13 +22,13 @@ use scripting additions
 property xattrAttributes : {"com.apple.metadata:kMDItemWhereFroms", ¬
 	"com.apple.metadata:_kMDItemUserTags", ¬
 	"com.apple.metadata:kMDItemFinderComment", ¬
-	"com.apple.metadata:kMDItemComment"} -- extended attributes that use an array of strings in a binary property list
+	"com.apple.metadata:kMDItemComment"}
 property itemLimit : 5 -- the maximum number of entries
 
 
 on run -- get file item(s) and attribute values
 	activate me
-	set attribute to (choose from list xattrAttributes with title "Extended Attributes") as text
+	set attribute to (choose from list xattrAttributes with title "Choose Extended Attribute") as text
 	if attribute is "false" then return
 	repeat with anItem in (choose file with prompt "Choose files for the " & quoted form of attribute & " attribute:" with multiple selections allowed)
 		set itemPath to POSIX path of anItem
@@ -64,7 +64,7 @@ to readAttribute(attribute, posixPath) -- read the list of attribute items
 		set {theResult, failure} to current application's NSPropertyListSerialization's propertyListWithData:theData options:(current application's NSPropertyListMutableContainersAndLeaves) format:(missing value) |error|:(reference)
 		if failure is not missing value then error failure's localizedString as text
 		return theResult as list
-	on error errmess
+	on error errmess -- no attribute, etc
 		log errmess
 		return {}
 	end try

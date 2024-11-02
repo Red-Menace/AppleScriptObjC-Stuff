@@ -9,7 +9,7 @@ use scripting additions
 	In a pop-up list, the index starts at 0, with the title (automatically) set to the selected item.
 	In a pull-down list, the index starts at 1, with index 0 used to (manually) store the list’s title.
 
-property mainWindow : missing value -- globals can also be used
+property mainWindow : missing value -- the window that will contain the control
 property popupButton : missing value
 
 set my popupButton to makePopupButton at {20, 20} given itemList:{"one", "two", "three", "This is the fourth menu item."}, title:"two" -- given arguments are optional

@@ -43,7 +43,7 @@ use scripting additions
 	and the tag and menu/menu item titles are logged as a reference (for action handlers, etc).
 	The example action handler just displays a dialog with some info about the sender.
 
-property mainWindow : missing value -- globals can also be used
+property mainWindow : missing value -- the window that will contain the control
 property customMenu : missing value
 
 set my customMenu to makeMenu for {"First Item", "Item foo", {"one", "two"}, "", "Item bar", {"three", "four", {"five", "six"}, {"seven", "eight"}}, "Last Item"} -- given arguments are optional

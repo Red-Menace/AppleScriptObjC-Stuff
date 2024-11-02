@@ -5,7 +5,7 @@ use scripting additions
 
 
 (* NSImageView example:
-property mainWindow : missing value -- globals can also be used
+property mainWindow : missing value -- the window that will contain the control
 property imageView : missing value
 
 set my imageView to makeImageView at {20, 20} given dimensions:{200, 200} -- given arguments are optional

@@ -16,7 +16,7 @@ use scripting additions
 	A menu item can be a list of a name and an action handler, or if just a name a default action handler will be used.
 	Clicking a segment button will select it and call the button action handler, holding the button will drop the menu, and selecting a menu item will call its menu action handler.
 
-property mainWindow : missing value -- globals can also be used
+property mainWindow : missing value -- the window that will contain the control
 property segmentedControl : missing value
 
 set segments to {¬

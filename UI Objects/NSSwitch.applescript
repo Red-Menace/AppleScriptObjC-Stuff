@@ -5,7 +5,7 @@ use scripting additions
 
 
 (* NSSwitch example:
-property mainWindow : missing value -- globals can also be used
+property mainWindow : missing value -- the window that will contain the control
 property switch : missing value
 
 set {originX, originY} to {60, 100} -- base location

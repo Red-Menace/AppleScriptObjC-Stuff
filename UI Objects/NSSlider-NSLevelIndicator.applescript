@@ -5,7 +5,7 @@ use scripting additions
 
 
 (* NSSlider/NSLevelIndicator example:
-property mainWindow : missing value -- globals can also be used
+property mainWindow : missing value -- the window that will contain the control
 property slider : missing value
 property levelIndicator : missing value
 

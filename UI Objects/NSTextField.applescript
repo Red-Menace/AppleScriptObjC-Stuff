@@ -5,7 +5,7 @@ use scripting additions
 
 
 (* NSTextField example:
-property mainWindow : missing value -- globals can also be used
+property mainWindow : missing value -- the window that will contain the control
 property textField : missing value
 property labelField : missing value
 

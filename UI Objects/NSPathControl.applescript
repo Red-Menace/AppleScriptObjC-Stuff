@@ -5,7 +5,7 @@ use scripting additions
 
 
 (* NSPathControl example:
-property mainWindow : missing value -- globals can also be used
+property mainWindow : missing value -- the window that will contain the control
 property pathControl : missing value
 
 set my pathControl to makePathControl at {100, 100} with popup -- given arguments are optional
