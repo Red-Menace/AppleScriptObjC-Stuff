@@ -31,4 +31,6 @@ These are also examples using AppleScriptObjC, but use other Cocoa classes that 
     * NSData, NSJSONSerialization, NSError
 * Extended Attributes - an example that uses the `xattr` shell utility to add or remove items from `com.apple.metadata:kMDItemWhereFroms`, `com.apple.metadata:_kMDItemUserTags`, `com.apple.metadata:kMDItemFinderComment"`, or `com.apple.metadata:kMDItemComment` file attributes.
 	* NSOrderedSet, NSString, NSPropertyListSerialization
+* Text from Image - text detection using the Vision framework.
+    * NSPasteboard, NSImage, VNImageRequestHandler, VNRecognizeTextRequest
 
