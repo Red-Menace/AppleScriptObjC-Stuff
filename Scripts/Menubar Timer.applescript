@@ -10,6 +10,7 @@
 		• Normal-to-caution and caution-to-warning interval settings can be made with sliders or by choosing from a "Presets" combo button (if available, otherwise the "Default" button will use the first item in the intervalMenuItems list).  Setting a percentage to zero will disable that color, and setting both to zero will disable all colors.
 	
 		• Preset times (menu item) can be customized by placing the desired items in the list for the timeMenuItems property.  The items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and countdownTime properties for the matching initial default as desired.
+		• If you are running macOS 13.0 Ventura or later, the last 5 custom time durations are available in a comboButton in the custom duration popup.  New and reused settings are placed at the top of the list.
 	
 		• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu.  Set the alarmSetting property for the matching initial default as desired.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play until the timer is stopped or restarted.
 		• A property (allSounds) is used as a flag to add an alternative to using preset sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are searched, sorted, and grouped by system > local > user, with separatorItems and headers used between sections.  Duplicate items are removed - the first matching name will be selected, so system names will override user names, etc.
@@ -31,7 +32,7 @@
 	
 		• Multiple timers are not supported, but multiple applications can be created with different names and bundle identifiers to keep the title, preferences, and script folders separate.
 	
-		• Cocoa classes used include NSStatusBar, NSScreen, NSWindow, NSView, NSViewController, NSMenu, NSMenuItem, NSTimer, NSUserDefaults, NSFileManager, NSEvent, NSMutableArray, NSMutableDictionary, NSMutableAttributedString, NSSound, NSColor, NSPopover, NSDatePicker, NSButton, NSTextField, NSSlider, NSPopupButton, and NSComboButton.
+		• Cocoa classes used include NSStatusBar, NSScreen, NSWindow, NSView, NSViewController, NSMenu, NSMenuItem, NSTimer, NSUserDefaults, NSFileManager, NSEvent, NSMutableArray, NSMutableDictionary, NSOrderedSet, NSMutableAttributedString, NSSound, NSColor, NSPopover, NSDate, NSDatePicker, NSButton, NSTextField, NSSlider, NSPopupButton, and NSComboButton.
 		
 		Finally, note that when running from a script editor, if the script is recompiled, any statusItem left in the menu bar will remain (but will no longer function) until the script editor is restarted.  Also, errors may fail silently, so when debugging you can add say, beep, or try statements, display a dialog, etc.
 *)
@@ -59,7 +60,8 @@ property alarmTime : 0 -- current target time-of-day (if it is set and not expir
 property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list) + "Custom Duration…" and "Set Alarm…"
 property alarmSetting : "Basso" -- current alarm setting (from actionMenuItems list) + "Off" and "Run Script…"
 property alarmScript : "" -- POSIX path to a user script
-property useStartTime : false -- calculate countdown from the start time vs a manual countdown when not paused or blocked
+property useStartTime : false -- calculate from the time started vs a manual countdown when not paused or blocked
+property previousSettings : {} -- previous custom duration settings
 
 # Option settings
 property optionClick : false -- support statusItem button option/right-click? -- see the doOptionClick handler
@@ -184,6 +186,7 @@ to readDefaults()
 		tell (its valueForKey:"TimeSetting") to if it ≠ missing value then set my timeSetting to (it as text)
 		tell (its valueForKey:"ScriptPath") to if it ≠ missing value then set my alarmScript to (it as text)
 		tell (its valueForKey:"UseStartTime") to if it ≠ missing value then set my useStartTime to (it as boolean)
+		tell (its valueForKey:"PreviousSettings") to if it ≠ missing value then set my previousSettings to (it as list)
 	end tell
 end readDefaults
 
@@ -197,6 +200,7 @@ to writeDefaults()
 		its setValue:(timeSetting as text) forKey:"TimeSetting"
 		its setValue:(alarmScript as text) forKey:"ScriptPath"
 		its setValue:(useStartTime as boolean) forKey:"UseStartTime"
+		its setValue:(previousSettings as list) forKey:"PreviousSettings"
 	end tell
 end writeDefaults
 
@@ -417,7 +421,11 @@ to buildTimeControls(setting) -- build the controls for a time popover
 	set promptLabel to makeLabel at {15, 50} given stringValue:setting & ":"
 	set datePicker to makeDatePicker at {100, 46} given dimensions:{80, 24}, dateValue:theTime
 	set cancelButton to makeButton at {11, 15} given dimensions:{85, 24}, title:"Cancel", action:"timePopover:", keyEquivalent:(character id 27)
-	set setButton to makeButton at {100, 15} given dimensions:{85, 24}, title:"Set", action:"timePopover:", keyEquivalent:return
+	if setting is "Duration" and previousSettings is not {} then -- use combo button for previous if available
+		set setButton to makeComboButton at {100, 15} for previousSettings given headerTitle:" Previous", dimensions:{85, 24}, title:"Set", defaultTitle:"Set", buttonStyle:0, menuAction:"timePopover:", buttonAction:"timePopover:"
+	else
+		set setButton to makeButton at {100, 15} given dimensions:{85, 24}, title:"Set", action:"timePopover:", keyEquivalent:return
+	end if
 	setPopoverViews for {promptLabel, datePicker, cancelButton, setButton} given title:setting
 end buildTimeControls
 
@@ -444,7 +452,13 @@ to buildIntervalControls() -- build the controls for an interval popover
 	set cautionSlider to makeSlider at {115, 66} given floatValue:cautionValue, trackColor:(second item of textColors)
 	set warningSlider to makeSlider at {115, 41} given floatValue:warningValue, trackColor:(third item of textColors)
 	set cancelButton to makeButton at {10, 15} given title:"Cancel", action:"intervalPopover:", keyEquivalent:(character id 27)
-	set defaultsButton to makeComboButton at {120, 15} for intervalMenuItems given title:"Presets"
+	set itemList to {}
+	repeat with anItem in intervalMenuItems
+		if class of anItem is list and contents of anItem is not {} then
+			tell anItem to set end of itemList to " " & my formatFloat(item 1) & "   " & my formatFloat(item 2)
+		end if
+	end repeat
+	set defaultsButton to makeComboButton at {120, 15} for itemList given title:"Presets", headerTitle:" Caution     Warning", menuAction:"updateIntervals:"
 	set setButton to makeButton at {230, 15} given title:"Set", action:"intervalPopover:", keyEquivalent:return
 	setPopoverViews for {cautionLabel, warningLabel, cautionSlider, warningSlider, cancelButton, defaultsButton, setButton}
 end buildIntervalControls
@@ -548,17 +562,31 @@ to getTime:sender -- get alarm or countdown time
 end getTime:
 
 on timePopover:sender -- handle buttons from the date picker popover
-	if (sender's title as text) is not "Cancel" then
-		set theTime to (time of (((first item of getPopoverControls("NSDatePicker"))'s dateValue) as date))
+	set buttonTitle to (sender's title) as text
+	if buttonTitle is not "Cancel" then
+		if buttonTitle is "Set" then
+			set theTime to (time of (((first item of getPopoverControls("NSDatePicker"))'s dateValue) as date))
+		else
+			set theTime to unformatTime(buttonTitle)
+		end if
 		tell (popover's contentViewController's title) as text to if it is "Duration" then
 			set my countdownTime to theTime
 			my resetTimeMenuState("Custom Duration…")
+			my updatePrevious(theTime)
 		else if it is "Alarm Time" then
 			my setAlarmTime(theTime)
 		end if
 	end if
 	tell popover to |close|()
 end timePopover:
+
+to updatePrevious(candidate) -- update previous custom duration settings
+	copy previousSettings to newSettings
+	set beginning of newSettings to formatTime(candidate) -- add or move entry to the beginning
+	set newSettings to ((current application's NSOrderedSet's orderedSetWithArray:newSettings)'s array()) as list
+	tell newSettings to if (count it) > 5 then set newSettings to items 1 thru 5
+	set my previousSettings to newSettings
+end updatePrevious
 
 to updatePopup:sender -- update popup button changes
 	sender's setTitle:(sender's titleOfSelectedItem) -- note that there may not always be a selection
@@ -763,6 +791,7 @@ end makeDatePicker
 
 to makePopupButton at (origin as list) given maxWidth:maxWidth as integer : 224, itemList:itemList as list : {}, title:title as text : "", action:action : "updatePopup:"
 	if maxWidth < 0 then set maxWidth to 0
+	set itemList to ((current application's NSOrderedSet's orderedSetWithArray:itemList)'s array()) as list
 	tell (thisApp's NSPopUpButton's alloc()'s initWithFrame:{origin, {maxWidth, 25}} pullsDown:true)
 		its setLineBreakMode:(thisApp's NSLineBreakByTruncatingMiddle)
 		its addItemsWithTitles:itemList
@@ -788,24 +817,21 @@ to makeSlider at (origin as list) given dimensions:dimensions as list : {210, 24
 	end tell
 end makeSlider
 
-on makeComboButton at (origin as list) for menuItems given dimensions:dimensions as list : {100, 24}, title:title as text : "Button", action:action as text : "updateIntervals:" -- macOS 13 Ventura and later
-	if action is in {"", "missing value"} then set action to missing value
-	if thisApp's NSClassFromString("NSComboButton") is missing value then return (makeButton at origin given dimensions:dimensions, title:"Default", action:action) -- framework not available, so just use use a button to reset the default
+on makeComboButton at (origin as list) for itemList given headerTitle:headerTitle as text : "", dimensions:dimensions as list : {100, 24}, title:title as text : "Button", defaultTitle:defaultTitle as text : "Default", buttonStyle:buttonStyle as integer : 1, menuAction:menuAction : missing value, buttonAction:buttonAction : missing value -- macOS 13 Ventura and later
+	set itemList to ((current application's NSOrderedSet's orderedSetWithArray:itemList)'s array()) as list
+	if thisApp's NSClassFromString("NSComboButton") is missing value then return (makeButton at origin given dimensions:dimensions, title:defaultTitle, action:menuAction) -- framework not available, so just return a regular button
 	tell (thisApp's NSMenu's alloc()'s initWithTitle:"")
-		set {tag, menuTitles} to {0, {}}
-		my (addMenuItem to it without enable given title:"Caution  Warning") -- title/header entry
-		repeat with anItem in menuItems
-			if class of anItem is list and contents of anItem is not {} then
-				set tag to tag + 1 -- used as an index into the intervalMenuItems list
-				tell anItem to set anItem to " " & my formatFloat(item 1) & "    " & my formatFloat(item 2)
-			end if
-			my (addMenuItem to it given title:anItem, action:action, tag:tag)
+		set tag to 0
+		if headerTitle is not "" then my (addMenuItem to it with header without enable given title:headerTitle)
+		repeat with anItem in itemList
+			set tag to tag + 1 -- used as an index into the item list
+			my (addMenuItem to it given title:anItem, action:menuAction, tag:tag)
 		end repeat
 		set menuActions to it
 	end tell
-	tell (thisApp's NSComboButton's comboButtonWithTitle:title |menu|:menuActions target:me action:(missing value))
+	tell (thisApp's NSComboButton's comboButtonWithTitle:title |menu|:menuActions target:me action:buttonAction)
 		its setFrame:{origin, dimensions}
-		its setStyle:1
+		its setStyle:buttonStyle
 		its setFont:(thisApp's NSFont's fontWithName:"Menlo" |size|:12) -- fixed width for formatting
 		return it
 	end tell
@@ -818,8 +844,8 @@ end makeComboButton
 
 # Add a menuItem to a menu - sectionHeaderWithTitle: convenience method is for macOS 14+, so an attributedString is used.
 to addMenuItem to theMenu given title:title as text : "", header:header as boolean : false, action:action as text : "", theKey:theKey as text : "", tag:tag as integer : 0, enable:enable : (missing value), state:state : (missing value) -- given parameters are optional
-	if action is in {"", "missing value"} then set action to missing value
-	if title is in {"", "missing value"} then return theMenu's addItem:(current application's NSMenuItem's separatorItem)
+	if action is "" then set action to missing value
+	if title is "" then return theMenu's addItem:(current application's NSMenuItem's separatorItem)
 	if header then tell (theMenu's addItemWithTitle:"" action:(missing value) keyEquivalent:"")
 		set attrTitle to current application's NSMutableAttributedString's alloc()'s initWithString:title
 		attrTitle's addAttribute:(current application's NSFontAttributeName) value:(current application's NSFont's fontWithName:"System Font Bold" |size|:11) range:{0, attrTitle's |length|()}
@@ -842,12 +868,18 @@ to getFolderContents from (posixPath as text) given subfolder:subfolder as text 
 	return ((current application's NSFileManager's defaultManager)'s enumeratorAtURL:(current application's NSURL's fileURLWithPath:((current application's NSString's stringWithString:posixPath)'s stringByAppendingPathComponent:subfolder)) includingPropertiesForKeys:resourceKeys options:options errorHandler:(missing value))'s allObjects()
 end getFolderContents
 
-# Return formatted 24 hour string (hh:mm:ss) from a number of seconds.
+# Return a formatted 24 hour string (hh:mm:ss) from a number of seconds.
 to formatTime(theSeconds)
 	if theSeconds < 0 then set theSeconds to 0
 	tell "000000" & (10000 * (theSeconds mod days div hours) + 100 * (theSeconds mod hours div minutes) + (theSeconds mod minutes)) ¬
 		to return (text -6 thru -5) & ":" & (text -4 thru -3) & ":" & (text -2 thru -1) -- wraps at 24 hours
 end formatTime
+
+# Return a number of seconds from the formatted 24 hour string above.
+to unformatTime(formattedString)
+	tell formattedString to set {hh, mm, ss} to {text 1 thru 2, text 4 thru 5, text 7 thru 8}
+	return (hh * 3600) + (mm * 60) + ss
+end unformatTime
 
 # Format a floating point number, rounding away from 0.
 to formatFloat(float)
