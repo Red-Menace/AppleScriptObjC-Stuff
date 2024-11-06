@@ -46,10 +46,10 @@ use scripting additions
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
 property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first (disabled) menu item as a title
-property version : 3.7 -- macOS 13 Ventura or later for NSComboButton (not tested, but may run in some earlier versions)
+property version : 3.8 -- macOS 13 Ventura or later for NSComboButton (may run in some earlier versions)
 
 # Cocoa API references
-property thisApp : current application
+property thisApp : current application -- just a shortcut
 property onState : a reference to thisApp's NSControlStateValueOn -- 1
 property offState : a reference to thisApp's NSControlStateValueOff -- 0
 
@@ -61,7 +61,7 @@ property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list
 property alarmSetting : "Basso" -- current alarm setting (from actionMenuItems list) + "Off" and "Run Script…"
 property alarmScript : "" -- POSIX path to a user script
 property useStartTime : false -- calculate from the time started vs a manual countdown when not paused or blocked
-property previousSettings : {} -- previous custom duration settings
+property customHistory : {} -- previous custom duration settings
 
 # Option settings
 property optionClick : false -- support statusItem button option/right-click? -- see the doOptionClick handler
@@ -80,17 +80,18 @@ property alarmSound : missing value -- this will be the selected sound
 
 # Popover outlets
 property positioningWindow : missing value -- this will be a 1 point high window to position the popover
-property popover : missing value -- this will be the popover
+property popover : missing value -- this will be the popover for various settings
 property viewController : missing value -- this will be the view controller and view for the current popover controls
 property popoverControls : {} -- this will be a list of the current popover controls
 
 # Preset values
 property intervalMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- color change percentages
 property intervalMaximum : 3600 -- maximum duration for use with the interval percentages
-property actionMenuItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Purr", "Sosumi", "Submarine"} -- see allSounds
 property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"}
+property actionMenuItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Purr", "Sosumi", "Submarine"} -- default
 property bundledSounds : {} -- this will be a list of instances for any sounds from the application bundle
-property soundTimeout : 0 -- countdown time (if > 10 seconds) to discontinue alarm sound - statusItem will still flash
+property soundExtensions : {"aac", "aiff", "mp4", "m4a", "m4r", "mp3", "wav"} -- accepted sound file extensions
+property soundTimeout : 0 -- seconds to discontinue alarm sound (0 to disable) - statusItem will still flash
 
 global userScriptsFolder -- where the user scripts are located
 global titleFont -- font used by the statusItem button title
@@ -119,7 +120,7 @@ to initialize() -- set things up
 	getSounds()
 	set {isPaused, flasher} to {true, false}
 	set {countdown, textColors} to {countdownTime, {}}
-	tell thisApp's id to set bundleID to item (((it begins with idPrefix) as integer) + 1) of {my filterID(idPrefix & "." & appName), it} -- new or existing
+	tell thisApp's id to set bundleID to item (((it begins with idPrefix) as integer) + 1) of {my filterID(idPrefix & "." & appName), it} -- application bundle identifier or from above property settings
 	set userScriptsFolder to POSIX path of ((path to library folder from user domain) as text) & "Application Scripts/" & bundleID & "/"
 	thisApp's NSFileManager's defaultManager's createDirectoryAtPath:userScriptsFolder withIntermediateDirectories:true attributes:(missing value) |error|:(missing value)
 	repeat with aColor in {(thisApp's NSColor's systemGreenColor), (thisApp's NSColor's systemOrangeColor), (thisApp's NSColor's systemRedColor), (thisApp's NSColor's systemGrayColor)} --  {normal, caution, warning, flashing}
@@ -143,7 +144,7 @@ to doAlarmAction() -- do something when the countdown reaches 0
 		end try
 	else
 		if alarmSetting is not "Off" and alarmSound is not missing value then
-			if soundTimeout ≤ 10 or (soundTimeout + countdown) > 0 then alarmSound's play() -- countdown can be negative
+			if (soundTimeout is 0) or (soundTimeout + countdown) > 0 then alarmSound's play() -- countdown continues negative
 		end if
 		set countdown to (item ((useStartTime as integer) + 1) of {countdown - 1, startTime - (current date)}) -- continue countdown
 		setAttributedTitle(countdown) -- update statusItem title (flash) - negative countdown will show zero
@@ -186,7 +187,7 @@ to readDefaults()
 		tell (its valueForKey:"TimeSetting") to if it ≠ missing value then set my timeSetting to (it as text)
 		tell (its valueForKey:"ScriptPath") to if it ≠ missing value then set my alarmScript to (it as text)
 		tell (its valueForKey:"UseStartTime") to if it ≠ missing value then set my useStartTime to (it as boolean)
-		tell (its valueForKey:"PreviousSettings") to if it ≠ missing value then set my previousSettings to (it as list)
+		tell (its valueForKey:"CustomHistory") to if it ≠ missing value then set my customHistory to (it as list)
 	end tell
 end readDefaults
 
@@ -200,7 +201,7 @@ to writeDefaults()
 		its setValue:(timeSetting as text) forKey:"TimeSetting"
 		its setValue:(alarmScript as text) forKey:"ScriptPath"
 		its setValue:(useStartTime as boolean) forKey:"UseStartTime"
-		its setValue:(previousSettings as list) forKey:"PreviousSettings"
+		its setValue:(customHistory as list) forKey:"CustomHistory"
 	end tell
 end writeDefaults
 
@@ -421,8 +422,8 @@ to buildTimeControls(setting) -- build the controls for a time popover
 	set promptLabel to makeLabel at {15, 50} given stringValue:setting & ":"
 	set datePicker to makeDatePicker at {100, 46} given dimensions:{80, 24}, dateValue:theTime
 	set cancelButton to makeButton at {11, 15} given dimensions:{85, 24}, title:"Cancel", action:"timePopover:", keyEquivalent:(character id 27)
-	if setting is "Duration" and previousSettings is not {} then -- use combo button for previous if available
-		set setButton to makeComboButton at {100, 15} for previousSettings given headerTitle:" Previous", dimensions:{85, 24}, title:"Set", defaultTitle:"Set", buttonStyle:0, menuAction:"timePopover:", buttonAction:"timePopover:"
+	if setting is "Duration" and customHistory is not {} then -- use combo button for previous if available
+		set setButton to makeComboButton at {100, 15} for customHistory given headerTitle:" Previous", dimensions:{85, 24}, title:"Set", defaultTitle:"Set", buttonStyle:0, menuAction:"timePopover:", buttonAction:"timePopover:"
 	else
 		set setButton to makeButton at {100, 15} given dimensions:{85, 24}, title:"Set", action:"timePopover:", keyEquivalent:return
 	end if
@@ -572,21 +573,13 @@ on timePopover:sender -- handle buttons from the date picker popover
 		tell (popover's contentViewController's title) as text to if it is "Duration" then
 			set my countdownTime to theTime
 			my resetTimeMenuState("Custom Duration…")
-			my updatePrevious(theTime)
+			my updateHistory(theTime)
 		else if it is "Alarm Time" then
 			my setAlarmTime(theTime)
 		end if
 	end if
 	tell popover to |close|()
 end timePopover:
-
-to updatePrevious(candidate) -- update previous custom duration settings
-	copy previousSettings to newSettings
-	set beginning of newSettings to formatTime(candidate) -- add or move entry to the beginning
-	set newSettings to ((current application's NSOrderedSet's orderedSetWithArray:newSettings)'s array()) as list
-	tell newSettings to if (count it) > 5 then set newSettings to items 1 thru 5
-	set my previousSettings to newSettings
-end updatePrevious
 
 to updatePopup:sender -- update popup button changes
 	sender's setTitle:(sender's titleOfSelectedItem) -- note that there may not always be a selection
@@ -643,7 +636,7 @@ to setAlarmTime(theSeconds)
 	try -- skip setting if cancel or give up
 		if (theSeconds - (time of (current date))) < 0 then -- note that the alarm time has passed
 			activate me
-			display alert "Setting Alarm Time" message "The specified alarm time may be set, but note that it is earlier than the current time." buttons {"Cancel", "OK"} cancel button "Cancel" default button "OK" giving up after 10
+			display alert "Setting Alarm Time" message "The specified alarm time may be set, but note that it is earlier than the current time." buttons {"Cancel", "OK"} cancel button "Cancel" default button "OK" giving up after 20
 			if gave up of the result then error
 		end if
 		set my alarmTime to theSeconds
@@ -691,6 +684,14 @@ to setIntervals() -- get normal > caution and caution > warning interval percent
 	showPopover()
 end setIntervals
 
+to updateHistory(candidate) -- update previous custom duration settings
+	copy customHistory to newHistory
+	set beginning of newHistory to formatTime(candidate) -- add or move entry to the beginning
+	set newHistory to ((thisApp's NSOrderedSet's orderedSetWithArray:newHistory)'s array()) as list
+	tell newHistory to if (count it) > 5 then set newHistory to items 1 thru 5
+	set my customHistory to newHistory
+end updateHistory
+
 to getUserScripts() -- get user scripts - returns the current name and a dictionary of scripts
 	set lexicon to thisApp's NSMutableDictionary's alloc()'s init() -- dictionary of name:posixPath
 	set current to missing value
@@ -704,7 +705,7 @@ to getUserScripts() -- get user scripts - returns the current name and a diction
 	end repeat
 	if lexicon's |count|() is 0 then
 		activate me
-		display alert "Error Finding Scripts" message "No compiled user scripts were found - please place a script in the '" & userScriptsFolder & "' folder and try again." buttons {"Show Folder", "OK"} giving up after 10
+		display alert "Error Finding Scripts" message "No compiled user scripts were found - please place a script in the '" & userScriptsFolder & "' folder and try again." buttons {"Show Folder", "OK"} giving up after 20
 		if button returned of result is "Show Folder" then tell application "Finder" to reveal (userScriptsFolder as POSIX file)
 		return {missing value, missing value}
 	end if
@@ -715,8 +716,7 @@ to getAllSounds() -- get sound names from the system, local, and user sound libr
 	tell thisApp's NSMutableArray to set {soundList, subList} to {its alloc()'s init(), its alloc()'s init()}
 	repeat with libraryPath in reverse of (((thisApp's NSSearchPathForDirectoriesInDomains(thisApp's NSLibraryDirectory, 11, true))'s objectEnumerator())'s allObjects as list)
 		repeat with anItem in (getFolderContents from libraryPath given subfolder:"Sounds")
-			set anItem to (anItem's |path|)'s lastPathComponent
-			if (anItem's pathExtension) as text is not in {"", missing value} then (subList's addObject:(anItem's stringByDeletingPathExtension as text))
+			tell anItem's |path| to if ((its pathExtension) as text) is in soundExtensions then (subList's addObject:(its lastPathComponent's stringByDeletingPathExtension as text)) -- don't try to add non-sound items
 		end repeat
 		(subList's removeObjectsInArray:soundList) -- the first match will be used, so remove names already in the list
 		if (subList's |count|()) as integer is not 0 then
@@ -736,7 +736,7 @@ to getSounds() -- add from the app bundle (if present) or from all sound librari
 	if allSounds then return getAllSounds() -- override preset
 	set soundList to thisApp's NSMutableArray's alloc()'s init()
 	repeat with anItem in (getFolderContents from (thisApp's NSBundle's mainBundle's resourcePath) given subfolder:"Sounds")
-		tell anItem's |path| to if (its pathExtension) as text is not in {"", missing value} then
+		tell anItem's |path| to if ((its pathExtension) as text) is in soundExtensions then
 			set justTheName to (its lastPathComponent)'s stringByDeletingPathExtension
 			(soundList's addObject:justTheName)
 			tell (thisApp's NSSound's alloc's initWithContentsOfFile:it byReference:true)
@@ -770,7 +770,7 @@ to makeButton at (origin as list) given dimensions:dimensions as list : {100, 24
 	tell (thisApp's NSButton's buttonWithTitle:title target:me action:action)
 		its setFrame:{origin, dimensions}
 		if keyEquivalent is not in {"", "missing value"} then its setKeyEquivalent:keyEquivalent
-		its setFont:(current application's NSFont's fontWithName:"Menlo" |size|:12)
+		its setFont:(thisApp's NSFont's fontWithName:"Menlo" |size|:12)
 		return it
 	end tell
 end makeButton
@@ -791,7 +791,7 @@ end makeDatePicker
 
 to makePopupButton at (origin as list) given maxWidth:maxWidth as integer : 224, itemList:itemList as list : {}, title:title as text : "", action:action : "updatePopup:"
 	if maxWidth < 0 then set maxWidth to 0
-	set itemList to ((current application's NSOrderedSet's orderedSetWithArray:itemList)'s array()) as list
+	set itemList to ((thisApp's NSOrderedSet's orderedSetWithArray:itemList)'s array()) as list
 	tell (thisApp's NSPopUpButton's alloc()'s initWithFrame:{origin, {maxWidth, 25}} pullsDown:true)
 		its setLineBreakMode:(thisApp's NSLineBreakByTruncatingMiddle)
 		its addItemsWithTitles:itemList
@@ -818,8 +818,8 @@ to makeSlider at (origin as list) given dimensions:dimensions as list : {210, 24
 end makeSlider
 
 on makeComboButton at (origin as list) for itemList given headerTitle:headerTitle as text : "", dimensions:dimensions as list : {100, 24}, title:title as text : "Button", defaultTitle:defaultTitle as text : "Default", buttonStyle:buttonStyle as integer : 1, menuAction:menuAction : missing value, buttonAction:buttonAction : missing value -- macOS 13 Ventura and later
-	set itemList to ((current application's NSOrderedSet's orderedSetWithArray:itemList)'s array()) as list
-	if thisApp's NSClassFromString("NSComboButton") is missing value then return (makeButton at origin given dimensions:dimensions, title:defaultTitle, action:menuAction) -- framework not available, so just return a regular button
+	set itemList to ((thisApp's NSOrderedSet's orderedSetWithArray:itemList)'s array()) as list
+	if thisApp's NSClassFromString("NSComboButton") is missing value then return (makeButton at origin given dimensions:dimensions, title:defaultTitle, action:menuAction, keyEquivalent:return) -- framework not available, so just return a regular button
 	tell (thisApp's NSMenu's alloc()'s initWithTitle:"")
 		set tag to 0
 		if headerTitle is not "" then my (addMenuItem to it with header without enable given title:headerTitle)
@@ -845,10 +845,10 @@ end makeComboButton
 # Add a menuItem to a menu - sectionHeaderWithTitle: convenience method is for macOS 14+, so an attributedString is used.
 to addMenuItem to theMenu given title:title as text : "", header:header as boolean : false, action:action as text : "", theKey:theKey as text : "", tag:tag as integer : 0, enable:enable : (missing value), state:state : (missing value) -- given parameters are optional
 	if action is "" then set action to missing value
-	if title is "" then return theMenu's addItem:(current application's NSMenuItem's separatorItem)
+	if title is "" then return theMenu's addItem:(thisApp's NSMenuItem's separatorItem)
 	if header then tell (theMenu's addItemWithTitle:"" action:(missing value) keyEquivalent:"")
-		set attrTitle to current application's NSMutableAttributedString's alloc()'s initWithString:title
-		attrTitle's addAttribute:(current application's NSFontAttributeName) value:(current application's NSFont's fontWithName:"System Font Bold" |size|:11) range:{0, attrTitle's |length|()}
+		set attrTitle to thisApp's NSMutableAttributedString's alloc()'s initWithString:title
+		attrTitle's addAttribute:(thisApp's NSFontAttributeName) value:(thisApp's NSFont's fontWithName:"System Font Bold" |size|:11) range:{0, attrTitle's |length|()}
 		its setAttributedTitle:attrTitle
 		its setEnabled:false
 		return it
@@ -865,7 +865,7 @@ end addMenuItem
 # Get the contents of a folder, skipping any sealed extensions - default option 7 is no hidden items, pkg contents, or subfolders.
 to getFolderContents from (posixPath as text) given subfolder:subfolder as text : "", resourceKeys:resourceKeys as list : {}, options:options as integer : 7 -- given parameters are optional
 	if posixPath begins with "/System/Cryptexes" then return {}
-	return ((current application's NSFileManager's defaultManager)'s enumeratorAtURL:(current application's NSURL's fileURLWithPath:((current application's NSString's stringWithString:posixPath)'s stringByAppendingPathComponent:subfolder)) includingPropertiesForKeys:resourceKeys options:options errorHandler:(missing value))'s allObjects()
+	return ((thisApp's NSFileManager's defaultManager)'s enumeratorAtURL:(thisApp's NSURL's fileURLWithPath:((thisApp's NSString's stringWithString:posixPath)'s stringByAppendingPathComponent:subfolder)) includingPropertiesForKeys:resourceKeys options:options errorHandler:(missing value))'s allObjects()
 end getFolderContents
 
 # Return a formatted 24 hour string (hh:mm:ss) from a number of seconds.
@@ -875,7 +875,7 @@ to formatTime(theSeconds)
 		to return (text -6 thru -5) & ":" & (text -4 thru -3) & ":" & (text -2 thru -1) -- wraps at 24 hours
 end formatTime
 
-# Return a number of seconds from the formatted 24 hour string above.
+# Return a number of seconds from a formatted 24 hour string - see formatTime.
 to unformatTime(formattedString)
 	tell formattedString to set {hh, mm, ss} to {text 1 thru 2, text 4 thru 5, text 7 thru 8}
 	return (hh * 3600) + (mm * 60) + ss
@@ -883,13 +883,13 @@ end unformatTime
 
 # Format a floating point number, rounding away from 0.
 to formatFloat(float)
-	tell current application's NSNumberFormatter's alloc()'s init()
+	tell thisApp's NSNumberFormatter's alloc()'s init()
 		its setMinimumFractionDigits:3
 		return its stringFromNumber:float
 	end tell
 end formatFloat
 
-# Filter a bundle ID candidate to only lower case allowed characters.
+# Filter a bundle ID candidate to only lower case and allowed characters.
 to filterID(candidate)
 	set {theResult, charList} to {{}, characters of "-.etaoinshrdlucmfwgypbvkxjqz0123456789"} -- letters in frequency order
 	repeat with aChar in (get characters of candidate)
