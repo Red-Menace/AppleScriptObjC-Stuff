@@ -38,7 +38,7 @@
 *)
 
 
-use AppleScript version "2.5" -- Sierra (10.12) or later for new enumerations
+use AppleScript version "2.7" -- High Sierra (10.13) or later for new enumerations and NSRect bridging to a list
 use framework "Foundation"
 use scripting additions
 
@@ -46,7 +46,7 @@ use scripting additions
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
 property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first (disabled) menu item as a title
-property version : 3.8 -- macOS 13 Ventura or later for NSComboButton (may run in some earlier versions)
+property version : 3.8 -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
 
 # Cocoa API references
 property thisApp : current application -- just a shortcut
@@ -62,6 +62,7 @@ property alarmSetting : "Basso" -- current alarm setting (from actionMenuItems l
 property alarmScript : "" -- POSIX path to a user script
 property useStartTime : false -- calculate from the time started vs a manual countdown when not paused or blocked
 property customHistory : {} -- previous custom duration settings
+property alarmHistory : {} -- previous alarm time settings
 
 # Option settings
 property optionClick : false -- support statusItem button option/right-click? -- see the doOptionClick handler
@@ -422,8 +423,10 @@ to buildTimeControls(setting) -- build the controls for a time popover
 	set promptLabel to makeLabel at {15, 50} given stringValue:setting & ":"
 	set datePicker to makeDatePicker at {100, 46} given dimensions:{80, 24}, dateValue:theTime
 	set cancelButton to makeButton at {11, 15} given dimensions:{85, 24}, title:"Cancel", action:"timePopover:", keyEquivalent:(character id 27)
-	if setting is "Duration" and customHistory is not {} then -- use combo button for previous if available
+	if setting is "Duration" and customHistory is not {} then -- use combo button for previous custom times if available
 		set setButton to makeComboButton at {100, 15} for customHistory given headerTitle:" Previous", dimensions:{85, 24}, title:"Set", defaultTitle:"Set", buttonStyle:0, menuAction:"timePopover:", buttonAction:"timePopover:"
+	else if setting is "Alarm Time" and alarmHistory is not {} then -- use combo button for previous alarm times if available
+		set setButton to makeComboButton at {100, 15} for alarmHistory given headerTitle:" Previous", dimensions:{85, 24}, title:"Set", defaultTitle:"Set", buttonStyle:0, menuAction:"timePopover:", buttonAction:"timePopover:"
 	else
 		set setButton to makeButton at {100, 15} given dimensions:{85, 24}, title:"Set", action:"timePopover:", keyEquivalent:return
 	end if
@@ -573,9 +576,10 @@ on timePopover:sender -- handle buttons from the date picker popover
 		tell (popover's contentViewController's title) as text to if it is "Duration" then
 			set my countdownTime to theTime
 			my resetTimeMenuState("Custom Duration…")
-			my updateHistory(theTime)
+			my updateHistory(theTime, a reference to my customHistory)
 		else if it is "Alarm Time" then
 			my setAlarmTime(theTime)
+			my updateHistory(theTime, a reference to my alarmHistory)
 		end if
 	end if
 	tell popover to |close|()
@@ -636,7 +640,7 @@ to setAlarmTime(theSeconds)
 	try -- skip setting if cancel or give up
 		if (theSeconds - (time of (current date))) < 0 then -- note that the alarm time has passed
 			activate me
-			display alert "Setting Alarm Time" message "The specified alarm time may be set, but note that it is earlier than the current time." buttons {"Cancel", "OK"} cancel button "Cancel" default button "OK" giving up after 20
+			display alert "Setting Alarm Time" message "The specified alarm time may be set, but note that it is earlier than the current time." buttons {"Cancel", "OK"} cancel button "Cancel" default button "OK" giving up after 15
 			if gave up of the result then error
 		end if
 		set my alarmTime to theSeconds
@@ -684,12 +688,12 @@ to setIntervals() -- get normal > caution and caution > warning interval percent
 	showPopover()
 end setIntervals
 
-to updateHistory(candidate) -- update previous custom duration settings
-	copy customHistory to newHistory
-	set beginning of newHistory to formatTime(candidate) -- add or move entry to the beginning
+to updateHistory(value, history) -- update previous custom duration or alarm settings
+	copy history to newHistory -- history argument will be a reference to the appropriate property
+	set beginning of newHistory to formatTime(value) -- add or move entry to the beginning
 	set newHistory to ((thisApp's NSOrderedSet's orderedSetWithArray:newHistory)'s array()) as list
 	tell newHistory to if (count it) > 5 then set newHistory to items 1 thru 5
-	set my customHistory to newHistory
+	set history to newHistory
 end updateHistory
 
 to getUserScripts() -- get user scripts - returns the current name and a dictionary of scripts
