@@ -10,7 +10,7 @@
 		• Normal-to-caution and caution-to-warning interval settings can be made with sliders or by choosing from a "Presets" combo button (if available, otherwise the "Default" button will use the first item in the intervalMenuItems list).  Setting a percentage to zero will disable that color, and setting both to zero will disable all colors.
 	
 		• Preset times (menu item) can be customized by placing the desired items in the list for the timeMenuItems property.  The items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and countdownTime properties for the matching initial default as desired.
-		• If you are running macOS 13.0 Ventura or later, the last 5 custom time durations are available in a comboButton in the custom duration popup.  New and reused settings are placed at the top of the list.
+		• If you are running macOS 13.0 Ventura or later, the last 5 alarm times and custom durations are available in a comboButton in the respective popover.  New and reused settings are placed at the top of the list before trimming.
 	
 		• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu.  Set the alarmSetting property for the matching initial default as desired.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play until the timer is stopped or restarted.
 		• A property (allSounds) is used as a flag to add an alternative to using preset sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are searched, sorted, and grouped by system > local > user, with separatorItems and headers used between sections.  Duplicate items are removed - the first matching name will be selected, so system names will override user names, etc.
@@ -46,7 +46,7 @@ use scripting additions
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
 property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first (disabled) menu item as a title
-property version : 3.8 -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
+property version : 3.9 -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
 
 # Cocoa API references
 property thisApp : current application -- just a shortcut
@@ -86,6 +86,7 @@ property viewController : missing value -- this will be the view controller and 
 property popoverControls : {} -- this will be a list of the current popover controls
 
 # Preset values
+property special : character id 8203 -- zero width space
 property intervalMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- color change percentages
 property intervalMaximum : 3600 -- maximum duration for use with the interval percentages
 property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"}
@@ -189,6 +190,7 @@ to readDefaults()
 		tell (its valueForKey:"ScriptPath") to if it ≠ missing value then set my alarmScript to (it as text)
 		tell (its valueForKey:"UseStartTime") to if it ≠ missing value then set my useStartTime to (it as boolean)
 		tell (its valueForKey:"CustomHistory") to if it ≠ missing value then set my customHistory to (it as list)
+		tell (its valueForKey:"AlarmHistory") to if it ≠ missing value then set my alarmHistory to (it as list)
 	end tell
 end readDefaults
 
@@ -203,6 +205,7 @@ to writeDefaults()
 		its setValue:(alarmScript as text) forKey:"ScriptPath"
 		its setValue:(useStartTime as boolean) forKey:"UseStartTime"
 		its setValue:(customHistory as list) forKey:"CustomHistory"
+		its setValue:(alarmHistory as list) forKey:"AlarmHistory"
 	end tell
 end writeDefaults
 
@@ -310,11 +313,12 @@ to addAlarmMenu(theMenu) -- submenu for the alarm actions
 		my (addMenuItem to it given title:"Run Script…", action:"setAlarm:", state:(alarmSetting is "Run Script…"))
 		my (addMenuItem to it)
 		repeat with aName in actionMenuItems -- placed at the end for possible menu extending off the screen
-			if contents of aName is in {"", "Bundled Sounds", "Preset Sounds", "User Sounds", "Local Sounds", "System Sounds"} then
+			set aName to aName as text
+			if aName is in {"", "Bundled Sounds", "Preset Sounds", "User Sounds", "Local Sounds", "System Sounds"} then
 				my (addMenuItem to it)
-				if contents of aName is not "" then my (addMenuItem to it with header given title:aName)
+				if aName is not "" then my (addMenuItem to it with header given title:aName)
 			else -- must be the name of a sound file
-				set state to alarmSetting is (aName as text)
+				set state to (alarmSetting is aName) and ((count alarmSetting) is (count aName)) -- handle zero width space characters
 				my (addMenuItem to it given title:aName, action:"setAlarm:", state:state)
 				if state then set my alarmSound to (thisApp's NSSound's soundNamed:aName)
 			end if
