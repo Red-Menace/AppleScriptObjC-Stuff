@@ -579,11 +579,10 @@ on timePopover:sender -- handle buttons from the date picker popover
 		end if
 		tell (popover's contentViewController's title) as text to if it is "Duration" then
 			set my countdownTime to theTime
+			set my customHistory to my updateHistory(theTime, customHistory)
 			my resetTimeMenuState("Custom Duration…")
-			my updateHistory(theTime, a reference to my customHistory)
 		else if it is "Alarm Time" then
 			my setAlarmTime(theTime)
-			my updateHistory(theTime, a reference to my alarmHistory)
 		end if
 	end if
 	tell popover to |close|()
@@ -648,6 +647,7 @@ to setAlarmTime(theSeconds)
 			if gave up of the result then error
 		end if
 		set my alarmTime to theSeconds
+		set my alarmHistory to my updateHistory(theSeconds, alarmHistory)
 		resetTimeMenuState("Set Alarm…")
 	end try
 end setAlarmTime
@@ -693,11 +693,11 @@ to setIntervals() -- get normal > caution and caution > warning interval percent
 end setIntervals
 
 to updateHistory(value, history) -- update previous custom duration or alarm settings
-	copy history to newHistory -- history argument will be a reference to the appropriate property
+	copy history to newHistory -- history argument is a reference to the property
 	set beginning of newHistory to formatTime(value) -- add or move entry to the beginning
 	set newHistory to ((thisApp's NSOrderedSet's orderedSetWithArray:newHistory)'s array()) as list
 	tell newHistory to if (count it) > 5 then set newHistory to items 1 thru 5
-	set history to newHistory
+	return newHistory
 end updateHistory
 
 to getUserScripts() -- get user scripts - returns the current name and a dictionary of scripts
