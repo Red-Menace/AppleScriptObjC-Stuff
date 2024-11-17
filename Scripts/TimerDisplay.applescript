@@ -14,9 +14,10 @@ property timer : missing value -- a repeating timer (for updating elapsed time)
 property updateInterval : 1 -- time between updates (seconds)
 property colorIntervals : {30, 60} -- green>yellow and yellow>red color change intervals (seconds)
 
-global elapsed, |paused| -- total elapsed time and a flag to pause the timer update
+global elapsed -- total elapsed time
+global suspended -- a flag to suspend the timer update (note that `pause` and `paused` are Script Debugger terms)
 global titleFont
-global greenColor, yellowColor, redColor
+global greenColor, yellowColor, redColor -- color attributes
 
 
 on run -- example will run as an app and from the Script Editor for testing
@@ -30,13 +31,15 @@ end run
 to setup() -- set stuff up and start timer
 	try
 		set elapsed to 0
-		set |paused| to true
+		set suspended to true
 		
-		# font and colors
-		set titleFont to current application's NSFont's fontWithName:"Courier New Bold" |size|:16 -- boldSystemFontOfSize:14
-		set greenColor to current application's NSDictionary's dictionaryWithObjects:{current application's NSColor's systemGreenColor} forKeys:{current application's NSForegroundColorAttributeName}
-		set yellowColor to current application's NSDictionary's dictionaryWithObjects:{current application's NSColor's systemYellowColor} forKeys:{current application's NSForegroundColorAttributeName}
-		set redColor to current application's NSDictionary's dictionaryWithObjects:{current application's NSColor's systemRedColor} forKeys:{current application's NSForegroundColorAttributeName}
+		# font and color attributes
+		tell current application
+			set titleFont to its (NSFont's fontWithName:"Courier New Bold" |size|:16) -- boldSystemFontOfSize:14
+			set greenColor to its (NSDictionary's dictionaryWithObject:(its NSColor's systemGreenColor) forKey:(its NSForegroundColorAttributeName))
+			set yellowColor to its (NSDictionary's dictionaryWithObject:(its NSColor's systemYellowColor) forKey:(its NSForegroundColorAttributeName))
+			set redColor to its (NSDictionary's dictionaryWithObject:(its NSColor's systemRedColor) forKey:(its NSForegroundColorAttributeName))
+		end tell
 		
 		# UI items
 		buildMenu()
@@ -102,7 +105,7 @@ on buildStatusItem() -- build a menu bar status item for the timer display
 end buildStatusItem
 
 to updateElapsed:sender -- called by the repeating timer to update the elapsed time display(s)
-	if paused then return -- skip it
+	if suspended then return -- skip it
 	set elapsed to elapsed + updateInterval
 	try
 		set newTime to formatTime(elapsed) -- plain text
@@ -129,12 +132,12 @@ end updateElapsed:
 on startStop:sender -- start or stop the timer
 	set itemTitle to sender's title as text
 	if itemTitle is "Start" then
-		set |paused| to false
+		set suspended to false
 		sender's setTitle:"Stop"
 		my reset:(missing value)
 		(timerMenu's itemAtIndex:1)'s setEnabled:true
 	else -- stop
-		set |paused| to true
+		set suspended to true
 		sender's setTitle:"Start"
 		(timerMenu's itemAtIndex:1)'s setEnabled:false
 		(timerMenu's itemAtIndex:1)'s setTitle:"Pause"
@@ -144,10 +147,10 @@ end startStop:
 on pauseContinue:sender -- pause or continue the timer
 	set itemTitle to sender's title as text
 	if itemTitle is "Pause" then
-		set |paused| to true
+		set suspended to true
 		sender's setTitle:"Continue"
 	else
-		set |paused| to false
+		set suspended to false
 		sender's setTitle:"Pause"
 	end if
 end pauseContinue:
