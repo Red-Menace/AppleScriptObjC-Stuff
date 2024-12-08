@@ -1,23 +1,24 @@
 
 (*
 	This script uses NSTimer to implement a repeating timer to count down once per second and provides a formatted "hh:mm:ss" countdown indication in a menu bar statusItem.  The status item includes menu items to adjust the countdown or alarm time and the action to perform when the countdown expires.  Timer settings can be selected from preset menu items or set from NSDatePicker controls presented in popover dialogs.  There is a countdown mode setting for a manual countdown or a check against the current time, but note that NSTimer is not an exact real-time mechanism.  
-	
+		
 		• To keep the statusItem title and time settings consistent, the title and countdown/alarm time date pickers use a 24-hour format.
 		
-		• The statusItem title will show a countdown time with an icon and tooltip indicating if it is a duration or alarm time - the time setting will be shown when the timer is stopped, but will change to the time remaining when the timer is started.  Note that while the duration and alarm times both wrap at 24 hours, the duration will be from when the timer is started, while the alarm time will only match one time per day.  When the countdown reaches 0 the statusItem title will flash until the timer is stopped or restarted.
-	
+		• The statusItem title will show a countdown time with an icon and tooltip indicating if it is a duration or alarm time - the time setting will be shown when the timer is stopped, but will change to the time remaining when the timer is started.  Note that while the duration and alarm times both wrap at 24 hours, the duration will be from when the timer is started, while the alarm time will only match one time per day.
+		• When the countdown reaches 0, a script will be run if it has been set as the alarm action, otherwise the statusItem title will flash and an alarm sound (if set) will play until the timer is stopped or restarted.
+		
 		• While the timer is running, the time remaining is shown in normal (green), caution (orange), and warning (red) colors.  These are from adjustable percentages of the intervalMaximum duration (default 3600 seconds/1 hour), or of the time setting if it is less than intervalMaximum.
 		• Normal-to-caution and caution-to-warning interval settings can be made with sliders or by choosing from a "Presets" combo button (if available, otherwise the "Default" button will use the first item in the intervalMenuItems list).  Setting a percentage to zero will disable that color, and setting both to zero will disable all colors.
-	
+		
 		• Preset times (menu item) can be customized by placing the desired items in the list for the timeMenuItems property.  The items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and countdownTime properties for the matching initial default as desired.
 		• If you are running macOS 13.0 Ventura or later, the last 5 alarm times and custom durations are available in a comboButton in the respective popover.  New and reused settings are placed at the top of the list before trimming.
-	
-		• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names, as a user sound will have precedence.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Set the alarmSetting property for the matching initial default as desired.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play until the timer is stopped or restarted.
-		• Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu - to avoid clashes with existing sounds, the names in the bundle can contain invisible characters such as a zero width space.
+		
+		• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Set the alarmSetting property for the matching initial default as desired.
+		• Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu - to avoid clashes with user sounds, the bundle names can contain invisible characters such as a zero width space.
 		• A property (allSounds) is used to flag an alternative to using preset sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are sorted and grouped by system > local > user, with separatorItems and headers used between sections.  Duplicate names (e.g. different extensions) in a group will be removed.
-		• An attempt was made to sample the alarm sound while highlighing the menu items, but a bit more work is needed to match the popup button in System Settings > Sound.  It works OK, just don't get ridiculous.
+		• Pausing on the menu item for a sound will play a sample.
 		• The Menubar Timer can also be metronome(ish) by setting the time to zero and using a sound action - for best results a short sound (less than 1 second) should be used.
-	
+		
 		• As an alternative to playing an alarm sound, a user script can be run when the countdown reaches 0.  The system's shared ScriptMonitor application will also be launched, which will show an activity statusItem with a gear icon in the menu bar.  This statusItem will have an entry for the script, which contains a cancel button and may include progress (if the script uses the built-in progress statements).
 		• Although the application is not sandboxed (and AppleScriptObjC can't use NSUserScriptTask anyway), it still requires scripts to be placed in the user's ~/Library/Application Scripts/<bundle-identifier> folder.  The app/script will create this folder as needed, which can also be revealed from the script setting popover.
 				◆ Scripts can be AppleScript or JavaScript for Automation (JXA) .scpt files
@@ -26,14 +27,14 @@
 					▫︎ Returning "quit" will cause the statusItem application to quit.
 					▫︎ Returning "restart" will restart the timer (unless using an alarm time, since it will have expired).
 					▫︎ Returning "continue" will let the countdown continue if using alternate actions (experimental).
-	
+		
 		• A property (optionClick) is included to enable different functionality when option/right-clicking the statusItem.  When true, a handler (doOptionClick) will be called instead of showing the menu.  This can be used for something separate from the menu such as an about panel (default), help/instructions, etc.
-	
+		
 		• Save as a stay-open application, and code sign or make the script read-only to keep accessibility permissions.
 		• Add a LSUIElement key to the application's Info.plist to make it an agent with no app menu or dock tile (background only).  In the event an invisible background app crashes, the /Applications/Utilities/Activity Monitor.app can be used to quit.
-	
+		
 		• Multiple timers are not supported, but multiple applications can be created with different names and bundle identifiers to keep the title, preferences, and script folders separate.
-	
+		
 		• Cocoa classes used include NSStatusBar, NSScreen, NSWindow, NSView, NSViewController, NSMenu, NSMenuItem, NSTimer, NSUserDefaults, NSFileManager, NSEvent, NSMutableArray, NSMutableDictionary, NSOrderedSet, NSMutableAttributedString, NSSound, NSColor, NSPopover, NSDate, NSDatePicker, NSButton, NSTextField, NSSlider, NSPopupButton, and NSComboButton.
 		
 		Finally, note that when running from a script editor, if the script is recompiled, any statusItem left in the menu bar will remain (but will no longer function) until the script editor is restarted.  Also, errors may fail silently, so if debugging you can add say, beep, or try statements, display a dialog, etc.
@@ -48,7 +49,7 @@ use scripting additions
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
 property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first (disabled) menu item as a title
-property version : "3.10" -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
+property version : "3.11" -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
 
 # Cocoa API references
 property |+| : current application -- just a shortcut (that it looks like a first aid kit is merely a coincidence)
@@ -103,7 +104,7 @@ global countdown -- the current countdown time (seconds)
 global startTime -- the time the countdown timer was started (seconds)
 global isPaused -- a flag for pausing the timer update
 global flasher -- a flag used to flash the statusItem button title
-global previousSample -- a record for the start time and sound instance of the previous sound sample
+global soundSample -- a record {instance:NSSound, timer:NSTimer} for a sound sample
 
 
 ##############################
@@ -122,7 +123,7 @@ end run
 to initialize() -- set things up
 	readDefaults() -- load preferences
 	getSounds()
-	set previousSample to {start:(do shell script "perl -MTime::HiRes=time -e 'printf \"%.9f\\n\", time'"), instance:(missing value)}
+	set soundSample to {instance:(missing value), timer:(missing value)}
 	set {isPaused, flasher} to {true, false}
 	set {countdown, textColors} to {countdownTime, {}}
 	tell (|+|'s id) as text to set bundleID to item ((((it begins with idPrefix) or (text 1 thru -2 of it is in {"com.apple.ScriptEditor", "com.latenightsw.ScriptDebugger"})) as integer) + 1) of {it, my filterID(idPrefix & "." & appName)} -- application bundle identifier (except script editors) or from the above property settings
@@ -242,19 +243,17 @@ on menuDidClose:_sender
 	if optionClick then statusItem's setMenu:(missing value)
 end menuDidClose:
 
-on |menu|:theMenu willHighlightItem:theItem -- play sound sample when the menu item is highlighted
+on |menu|:theMenu willHighlightItem:theItem -- play sound sample when a menu item is going to be highlighted
 	if (theMenu's title) as text is not "Action" then return -- not the other menus
 	if ((theItem's title) as text) is in {"Off", "Run Script…"} then return -- not these, either
-	set {start, instance} to {start, instance} of previousSample
-	set now to (do shell script "perl -MTime::HiRes=time -e 'printf \"%.9f\\n\", time'") -- for fractional seconds
-	if now - start > 0.15 then -- try not to stomp on the previous sample (feet are still too big)
-		if instance is not missing value then instance's |stop|()
-		set newInstance to |+|'s NSSound's soundNamed:(theItem's title)
-		newInstance's play()
-	else
-		set newInstance to missing value
-	end if
-	set previousSample to {start:now, instance:newInstance}
+	tell soundSample
+		if its instance is not missing value then its instance's |stop|() -- stop any previous
+		if its timer is not missing value then its timer's invalidate()
+		if theItem is missing value then return
+		set its instance to |+|'s NSSound's soundNamed:(theItem's title) -- set up a new sample
+		set its timer to |+|'s NSTimer's timerWithTimeInterval:0.5 target:me selector:"oneshotSample:" userInfo:(missing value) repeats:false -- one-shot timer to play sound after a delay
+		|+|'s NSRunLoop's mainRunLoop's addTimer:(its timer) forMode:(|+|'s NSEventTrackingRunLoopMode)
+	end tell
 end |menu|:willHighlightItem:
 
 on popoverDidClose:_notification -- clear popover stuff
@@ -495,7 +494,7 @@ end buildIntervalControls
 # Action Handlers            #
 ##############################
 
-# BE CAREFUL if using multiple editors - Script Debugger needs "type" to be escaped, while Script Editor will remove escaping.
+# BE CAREFUL if using multiple editors - Script Debugger needs "type" to be escaped, while Script Editor will remove the escaping.
 on statusItemAction:_sender -- handle option/right-click
 	if not optionClick then return
 	set eventType to (|+|'s NSApp's currentEvent's |type|()) as integer -- pay attention to the escaping for "type"
@@ -524,6 +523,13 @@ to updateCountdown:_sender -- update the statusItem title and check countdown (r
 		setAttributedTitle(countdown)
 	end if
 end updateCountdown:
+
+on oneshotSample:_timer -- play a sound sample
+	tell soundSample
+		its instance's play()
+		set its timer to missing value
+	end tell
+end oneshotSample:
 
 to setMenuTime:sender -- update the time menu selection
 	set setting to (sender's title as text)
