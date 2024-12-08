@@ -12,8 +12,8 @@
 		• Preset times (menu item) can be customized by placing the desired items in the list for the timeMenuItems property.  The items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and countdownTime properties for the matching initial default as desired.
 		• If you are running macOS 13.0 Ventura or later, the last 5 alarm times and custom durations are available in a comboButton in the respective popover.  New and reused settings are placed at the top of the list before trimming.
 	
-		• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Set the alarmSetting property for the matching initial default as desired.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play until the timer is stopped or restarted.
-		• Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu - to avoid clashes with user sounds, the bundle names can contain invisible characters such as a zero width space.
+		• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names, as a user sound will have precedence.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Set the alarmSetting property for the matching initial default as desired.  If using an alarm sound, when the countdown reaches 0 it will repeatedly play until the timer is stopped or restarted.
+		• Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu - to avoid clashes with existing sounds, the names in the bundle can contain invisible characters such as a zero width space.
 		• A property (allSounds) is used to flag an alternative to using preset sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are sorted and grouped by system > local > user, with separatorItems and headers used between sections.  Duplicate names (e.g. different extensions) in a group will be removed.
 		• An attempt was made to sample the alarm sound while highlighing the menu items, but a bit more work is needed to match the popup button in System Settings > Sound.  It works OK, just don't get ridiculous.
 		• The Menubar Timer can also be metronome(ish) by setting the time to zero and using a sound action - for best results a short sound (less than 1 second) should be used.
@@ -67,7 +67,7 @@ property customHistory : {} -- previous custom duration settings
 property alarmHistory : {} -- previous alarm time settings
 
 # Option settings
-property optionClick : true -- support statusItem button option/right-click? -- see the doOptionClick handler
+property optionClick : false -- support statusItem button option/right-click? -- see the doOptionClick handler
 property allSounds : false -- load sounds from all libraries? -- can be a lot depending on what has been installed
 property altActions : false -- experimental support for alternate actions -- see the doAltAction handler
 property testing : false -- a flag to indicate testing so that preferences are not updated, etc
@@ -125,7 +125,7 @@ to initialize() -- set things up
 	set previousSample to {start:(do shell script "perl -MTime::HiRes=time -e 'printf \"%.9f\\n\", time'"), instance:(missing value)}
 	set {isPaused, flasher} to {true, false}
 	set {countdown, textColors} to {countdownTime, {}}
-	tell |+|'s id to set bundleID to item (((it begins with idPrefix) as integer) + 1) of {my filterID(idPrefix & "." & appName), it} -- application bundle identifier or from the above property settings
+	tell (|+|'s id) as text to set bundleID to item ((((it begins with idPrefix) or (text 1 thru -2 of it is in {"com.apple.ScriptEditor", "com.latenightsw.ScriptDebugger"})) as integer) + 1) of {it, my filterID(idPrefix & "." & appName)} -- application bundle identifier (except script editors) or from the above property settings
 	set userScriptsFolder to POSIX path of ((path to library folder from user domain) as text) & "Application Scripts/" & bundleID & "/"
 	|+|'s NSFileManager's defaultManager's createDirectoryAtPath:userScriptsFolder withIntermediateDirectories:true attributes:(missing value) |error|:(missing value)
 	repeat with aColor in {(|+|'s NSColor's systemGreenColor), (|+|'s NSColor's systemOrangeColor), (|+|'s NSColor's systemRedColor), (|+|'s NSColor's systemGrayColor)} --  {normal, caution, warning, flashing}
