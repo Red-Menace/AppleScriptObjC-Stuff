@@ -46,7 +46,7 @@ use scripting additions
 
 # App properties - these are used when running in a script editor to access the appropriate user scripts folder.
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
-property idPrefix : "com.menace-enterprises" -- com.apple.ScriptEditor.id (or whatever)
+property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first (disabled) menu item as a title
 property version : "3.10" -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
 
