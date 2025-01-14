@@ -5,7 +5,7 @@ This script uses NSTimer to implement a repeating timer to count down once per s
 	• To keep the statusItem title and time settings consistent, the title and countdown/alarm time date pickers use a 24-hour format.
 		
 	• The statusItem title will show a countdown time with an icon and tooltip indicating if it is a duration or alarm time - the time setting will be shown when the timer is stopped, but will change to the time remaining when the timer is started.  Note that while the duration and alarm times both wrap at 24 hours, the duration will be from when the timer is started, while the alarm time will only match one time per day.
-	• When the countdown reaches 0, a script will be run if it has been set as the alarm action, otherwise the statusItem title will flash and an alarm sound (if set) will play until the timer is stopped or restarted.
+	• When the countdown reaches 0, a script will be run if it has been set as the action, otherwise the statusItem title will flash and a sound (if set) will play until the timer is stopped or restarted.
 		
 	• While the timer is running, the time remaining is shown in normal (green), caution (orange), and warning (red) colors.  These are from adjustable percentages of the intervalMaximum duration (default 3600 seconds/1 hour), or of the time setting if it is less than intervalMaximum.
 	• Normal-to-caution and caution-to-warning interval settings can be made with sliders or by choosing from a "Presets" combo button (if available, otherwise the "Default" button will use the first item in the intervalMenuItems list).  Setting a percentage to zero will disable that color, and setting both to zero will disable all colors.
@@ -13,13 +13,13 @@ This script uses NSTimer to implement a repeating timer to count down once per s
 	• Preset times (menu item) can be customized by placing the desired items in the list for the timeMenuItems property.  The items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and countdownTime properties for the matching initial default as desired.
 	• If you are running macOS 13.0 Ventura or later, the last 5 alarm times and custom durations are available in a comboButton in the respective popover.  New and reused settings are placed at the top of the list before trimming.
 		
-	• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Set the alarmSetting property for the matching initial default as desired.
+	• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Set the actionSetting property for the matching initial default as desired.
 	• Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu - to avoid clashes with user sounds, the bundle names can contain invisible characters such as a zero width space.
 	• A property (allSounds) is used to flag an alternative to using preset sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are sorted and grouped by system > local > user, with separatorItems and headers used between sections.  Duplicate names (e.g. different extensions) in a group will be removed.
 	• Pausing on the menu item for a sound will play a sample.
 	• The Menubar Timer can also be metronome(ish) by setting the time to zero and using a sound action - for best results a short sound (less than 1 second) should be used.
 		
-	• As an alternative to playing an alarm sound, a user script can be run when the countdown reaches 0.  The system's shared ScriptMonitor application will also be launched, which will show an activity statusItem with a gear icon in the menu bar.  This statusItem will have an entry for the script, which contains a cancel button and may include progress (if the script uses the built-in progress statements).
+	• As an alternative to playing a sound, a user script can be run when the countdown reaches 0.  The system's shared ScriptMonitor application will also be launched, which will show an activity statusItem with a gear icon in the menu bar.  This statusItem will have an entry for the script, which contains a cancel button and may include progress (if the script uses the built-in progress statements).
 	• Although the application is not sandboxed (and AppleScriptObjC can't use NSUserScriptTask anyway), it still requires scripts to be placed in the user's ~/Library/Application Scripts/<bundle-identifier> folder.  The app/script will create this folder as needed, which can also be revealed from the script setting popover.
 		◆ Scripts can be AppleScript or JavaScript for Automation (JXA) .scpt files
 		◆ Scripts should be tested with the timer app to pre-approve any permissions.
@@ -49,7 +49,7 @@ use scripting additions
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
 property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first (disabled) menu item as a title
-property version : "3.11" -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
+property version : "3.12" -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
 
 -->> Cocoa API references
 property |+| : current application -- just a shortcut (that it looks like a first aid kit is merely a coincidence)
@@ -61,10 +61,10 @@ property colorIntervals : {0.35, 0.1} -- normal-to-caution and caution-to-warnin
 property countdownTime : 3600 -- current countdown duration (seconds of the custom or selected duration)
 property alarmTime : 0 -- current target time-of-day (if it is set and not expired)
 property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list) + "Custom Duration…" and "Set Alarm…"
-property alarmSetting : "Basso" -- current alarm setting (from actionMenuItems list) + "Off" and "Run Script…"
-property alarmScript : "" -- POSIX path to a user script
+property actionSetting : "Basso" -- current action setting (from actionMenuItems list) + "Off" and "Run Script…"
+property userScriptPath : "" -- POSIX path to a user script
 property useStartTime : false -- calculate from the time started vs a manual countdown when not paused or blocked
-property customHistory : {} -- previous custom duration settings
+property durationHistory : {} -- previous custom duration settings
 property alarmHistory : {} -- previous alarm time settings
 
 -->> Option settings
@@ -77,10 +77,10 @@ property testing : false -- a flag to indicate testing so that preferences are n
 property statusItem : missing value -- this will be the status bar item
 property statusMenu : missing value -- this will be a menu for the statusItem
 property timeMenu : missing value -- this will be a menu of the times
-property alarmMenu : missing value -- this will be a menu of the alarms
+property actionMenu : missing value -- this will be a menu of the actions
 property timer : missing value -- this will be a repeating timer
-property attrText : missing value -- this will be an attributed (color, font, etc) string for the statusItem title
-property alarmSound : missing value -- this will be the selected sound
+property attrText : missing value -- this will be an attributed string (color, font, etc) for the statusItem title
+property actionSound : missing value -- this will be the selected sound
 
 -->> Popover outlets
 property positioningWindow : missing value -- this will be a 1 point high window to position the popover
@@ -141,24 +141,24 @@ to initialize() -- set things up
 	setupPopoverStuff()
 end initialize
 
-to doAlarmAction() -- do something when the countdown reaches 0
-	if alarmSetting is "Run Script…" then
+to doAction() -- do something when the countdown reaches 0
+	if actionSetting is "Run Script…" then
 		try
-			runScript for alarmScript given arguments:countdown
+			runScript from userScriptPath given arguments:countdown
 		on error errmess number errnum -- handle a script error
-			showAlert from "doAlarmAction" for errmess given errnum:errnum
+			showAlert from "doAction" for errmess given errnum:errnum
 			my startStop:(missing value) -- stop the countdown
 		end try
 	else
-		if alarmSetting is not "Off" and alarmSound is not missing value then
-			if (soundTimeout is 0) or (soundTimeout + countdown) > 0 then alarmSound's play() -- countdown continues negative
+		if actionSetting is not "Off" and actionSound is not missing value then
+			if (soundTimeout is 0) or (soundTimeout + countdown) > 0 then actionSound's play() -- countdown continues negative
 		end if
 		set countdown to (item ((useStartTime as integer) + 1) of {countdown - 1, startTime - (current date)}) -- continue countdown
 		setAttributedTitle(countdown) -- update statusItem title (flash) - negative countdown will show zero
 	end if
-end doAlarmAction
+end doAction
 
-to runScript for (posixPath as text) given arguments:arguments as list : {} -- script must be in the userScriptsFolder
+to runScript from (posixPath as text) given arguments:arguments as list : {} -- script must be in the userScriptsFolder
 	set args to ""
 	repeat with anItem in arguments -- prepare arguments for the shell script
 		set args to args & space & quoted form of (anItem as text)
@@ -181,20 +181,20 @@ to handleResults(response) -- handle script results (if any)
 		set response to missing value
 		my startStop:(missing value)
 	end if
-	return response -- for a script running outside the doAlarmAction handler
+	return response -- for a script running outside the doAction handler
 end handleResults
 
 to readDefaults()
 	tell standardUserDefaults() of |+|'s NSUserDefaults
-		its registerDefaults:{alarmSetting:alarmSetting, colorIntervals:colorIntervals, countdownTime:countdownTime, alarmTime:alarmTime, timeSetting:timeSetting, alarmScript:alarmScript, useStartTime:useStartTime}
-		tell (its valueForKey:"AlarmSetting") to if it ≠ missing value then set my alarmSetting to (it as text)
+		its registerDefaults:{actionSetting:actionSetting, colorIntervals:colorIntervals, countdownTime:countdownTime, alarmTime:alarmTime, timeSetting:timeSetting, userScriptPath:userScriptPath, useStartTime:useStartTime}
+		tell (its valueForKey:"ActionSetting") to if it ≠ missing value then set my actionSetting to (it as text)
 		tell (its valueForKey:"Intervals") to if it ≠ missing value then set my colorIntervals to (it as list)
-		tell (its valueForKey:"Countdown") to if it ≠ missing value then set my countdownTime to (it as integer)
+		tell (its valueForKey:"CountdownTime") to if it ≠ missing value then set my countdownTime to (it as integer)
 		tell (its valueForKey:"AlarmTime") to if it ≠ missing value then set my alarmTime to (it as integer)
 		tell (its valueForKey:"TimeSetting") to if it ≠ missing value then set my timeSetting to (it as text)
-		tell (its valueForKey:"ScriptPath") to if it ≠ missing value then set my alarmScript to (it as text)
+		tell (its valueForKey:"ScriptPath") to if it ≠ missing value then set my userScriptPath to (it as text)
 		tell (its valueForKey:"UseStartTime") to if it ≠ missing value then set my useStartTime to (it as boolean)
-		tell (its valueForKey:"CustomHistory") to if it ≠ missing value then set my customHistory to (it as list)
+		tell (its valueForKey:"DurationHistory") to if it ≠ missing value then set my durationHistory to (it as list)
 		tell (its valueForKey:"AlarmHistory") to if it ≠ missing value then set my alarmHistory to (it as list)
 	end tell
 end readDefaults
@@ -202,14 +202,14 @@ end readDefaults
 to writeDefaults()
 	if testing then return -- don't update preferences when testing
 	tell standardUserDefaults() of |+|'s NSUserDefaults
-		its setValue:(alarmSetting as text) forKey:"AlarmSetting"
+		its setValue:(actionSetting as text) forKey:"ActionSetting"
 		its setValue:(colorIntervals as list) forKey:"Intervals"
-		its setValue:(countdownTime as integer) forKey:"Countdown"
+		its setValue:(countdownTime as integer) forKey:"CountdownTime"
 		its setValue:(alarmTime as integer) forKey:"AlarmTime"
 		its setValue:(timeSetting as text) forKey:"TimeSetting"
-		its setValue:(alarmScript as text) forKey:"ScriptPath"
+		its setValue:(userScriptPath as text) forKey:"ScriptPath"
 		its setValue:(useStartTime as boolean) forKey:"UseStartTime"
-		its setValue:(customHistory as list) forKey:"CustomHistory"
+		its setValue:(durationHistory as list) forKey:"DurationHistory"
 		its setValue:(alarmHistory as list) forKey:"AlarmHistory"
 	end tell
 end writeDefaults
@@ -297,7 +297,7 @@ to buildMenu() -- build a menu for the status item
 		my (addMenuItem to it without enable given title:"Reset", action:"resetCountdown")
 		my (addMenuItem to it) --
 		my addTimeMenu(it)
-		my addAlarmMenu(it)
+		my addActionMenu(it)
 		my (addMenuItem to it) --
 		my addSettings(it)
 		my (addMenuItem to it) --
@@ -322,14 +322,14 @@ to addTimeMenu(theMenu) -- submenu for the countdown times
 	(theMenu's addItemWithTitle:"Time" action:(missing value) keyEquivalent:"")'s setSubmenu:timeMenu
 end addTimeMenu
 
-to addAlarmMenu(theMenu) -- submenu for the alarm actions
+to addActionMenu(theMenu) -- submenu for the actions
 	tell (|+|'s NSMenu's alloc()'s initWithTitle:"Action")
-		set my alarmMenu to it
+		set my actionMenu to it
 		its setDelegate:me -- to handle sound preview
 		its setAutoenablesItems:false
-		my (addMenuItem to it given title:"Off", action:"setAlarm:", state:(alarmSetting is "Off"))
+		my (addMenuItem to it given title:"Off", action:"setAlarm:", state:(actionSetting is "Off"))
 		my (addMenuItem to it) -- separator menu item
-		my (addMenuItem to it given title:"Run Script…", action:"setAlarm:", state:(alarmSetting is "Run Script…"))
+		my (addMenuItem to it given title:"Run Script…", action:"setAlarm:", state:(actionSetting is "Run Script…"))
 		my (addMenuItem to it) --
 		repeat with aName in actionMenuItems -- placed at the end for possible menu extending off the screen
 			set aName to aName as text
@@ -337,14 +337,14 @@ to addAlarmMenu(theMenu) -- submenu for the alarm actions
 				my (addMenuItem to it) --
 				if aName is not "" then my (addMenuItem to it with header given title:aName) -- section header
 			else -- must be the name of a sound file
-				set state to (alarmSetting is aName) and ((count alarmSetting) is (count aName)) -- handle zero width spaces
+				set state to (actionSetting is aName) and ((count actionSetting) is (count aName)) -- handle zero width spaces
 				my (addMenuItem to it given title:aName, action:"setAlarm:", state:state)
-				if state then set my alarmSound to (|+|'s NSSound's soundNamed:aName)
+				if state then set my actionSound to (|+|'s NSSound's soundNamed:aName)
 			end if
 		end repeat
 	end tell
-	(theMenu's addItemWithTitle:"Action" action:(missing value) keyEquivalent:"")'s setSubmenu:alarmMenu
-end addAlarmMenu
+	(theMenu's addItemWithTitle:"Action" action:(missing value) keyEquivalent:"")'s setSubmenu:actionMenu
+end addActionMenu
 
 to addSettings(theMenu)
 	tell (|+|'s NSMenu's alloc()'s initWithTitle:"") -- submenu for mode
@@ -361,7 +361,7 @@ end addSettings
 to setAttributedTitle(theTime) -- set the statusItem button's attributed string title (for colors)
 	attrText's addAttribute:"NSColor" value:(|+|'s NSColor's darkGrayColor) range:{0, attrText's |length|()} -- default
 	attrText's replaceCharactersInRange:{0, attrText's |length|()} withString:formatTime(theTime)
-	set targetTime to item (((timeSetting is "Set Alarm…" or countdownTime > intervalMaximum) as integer) + 1) of {countdownTime, intervalMaximum} -- current duration or maximum for alarm time percentages
+	set targetTime to item (((timeSetting is "Set Alarm…" or countdownTime > intervalMaximum) as integer) + 1) of {countdownTime, intervalMaximum} -- current duration or maximum for time percentages
 	tell colorIntervals to if it is not {0.0, 0.0} then -- start with normal, then overwrite to allow a color disable
 		attrText's addAttribute:"NSColor" value:(first item of textColors) range:{0, attrText's |length|()} -- normal
 		if its first item is not 0.0 and theTime ≤ ((its first item) * targetTime) then attrText's addAttribute:"NSColor" value:(second item of textColors) range:{0, attrText's |length|()} -- caution
@@ -446,8 +446,8 @@ to buildTimeControls(setting) -- build the controls for a time popover
 	set promptLabel to makeLabel at {15, 50} given stringValue:setting & ":"
 	set datePicker to makeDatePicker at {100, 46} given dimensions:{80, 24}, dateValue:theTime
 	set cancelButton to makeButton at {11, 15} given dimensions:{85, 24}, title:"Cancel", action:"timePopover:", keyEquivalent:(character id 27)
-	if setting is "Duration" and customHistory is not {} then -- use combo button for previous custom times if available
-		set setButton to makeComboButton at {100, 15} for customHistory given headerTitle:" Previous", dimensions:{85, 24}, title:"Set", defaultTitle:"Set", buttonStyle:0, menuAction:"timePopover:", buttonAction:"timePopover:"
+	if setting is "Duration" and durationHistory is not {} then -- use combo button for previous custom times if available
+		set setButton to makeComboButton at {100, 15} for durationHistory given headerTitle:" Previous", dimensions:{85, 24}, title:"Set", defaultTitle:"Set", buttonStyle:0, menuAction:"timePopover:", buttonAction:"timePopover:"
 	else if setting is "Alarm Time" and alarmHistory is not {} then -- use combo button for previous alarm times if available
 		set setButton to makeComboButton at {100, 15} for alarmHistory given headerTitle:" Previous", dimensions:{85, 24}, title:"Set", defaultTitle:"Set", buttonStyle:0, menuAction:"timePopover:", buttonAction:"timePopover:"
 	else -- regular button
@@ -458,10 +458,10 @@ end buildTimeControls
 
 to buildScriptControls() -- build the controls for a script popover - returns boolean for success
 	set {current, dictionary} to getUserScripts()
-	if current is in {"", missing value} or dictionary is missing value then set my alarmScript to ""
+	if current is in {"", missing value} or dictionary is missing value then set my userScriptPath to ""
 	if dictionary is missing value then return false -- no scripts found
 	if current is in {"", missing value} then set current to "– No script selected –"
-	set promptLabel to makeLabel at {15, 50} given stringValue:"Alarm script:"
+	set promptLabel to makeLabel at {15, 50} given stringValue:"Action script:"
 	set popup to makePopupButton at {103, 44} given itemList:(dictionary's allKeys()) as list, title:current
 	set cancelButton to makeButton at {10, 15} given dimensions:{95, 24}, title:"Cancel", action:"scriptPopover:", keyEquivalent:(character id 27)
 	set showButton to makeButton at {110, 15} given dimensions:{120, 24}, title:"Show Folder", action:"scriptPopover:"
@@ -512,8 +512,8 @@ to updateCountdown:_timer -- update the statusItem title and check countdown (re
 	if altActions then -- do something else for a specific condition (experimental)
 		if doAltActions() then return -- the handler returns a boolean to exit the handler (or not)
 	end if
-	if countdown ≤ 0 then -- alarm - note that the countdown can be negative
-		doAlarmAction()
+	if countdown ≤ 0 then -- action - note that the countdown can be negative
+		doAction()
 	else -- continue - note that for the (experimental) doAltActions, alarm and mode conditions may be skipped when starting
 		if alarmTime > 0 and timeSetting is "Set Alarm…" then -- calculate time remaining to alarm
 			set countdown to alarmTime - (time of (current date))
@@ -528,7 +528,7 @@ end updateCountdown:
 on oneshotSample:_timer -- play a sound sample
 	tell soundSample
 		its instance's play()
-		set its timer to missing value -- already invalidated
+		set its timer to missing value -- invalidated when fired
 	end tell
 end oneshotSample:
 
@@ -540,16 +540,16 @@ to setMenuTime:sender -- update the time menu selection
 	resetTimeMenuState(setting)
 end setMenuTime:
 
-to setAlarm:sender -- update the alarm selection
-	tell (sender's title as text) to if it is "Run Script…" then -- get alarm script
+to setAlarm:sender -- update the action selection
+	tell (sender's title as text) to if it is "Run Script…" then -- get action script
 		if not my buildScriptControls() then return -- no scripts
 		my showPopover()
 		return -- menu state updated by popover
 	else if it is not "Off" then -- set up sound
-		set my alarmSound to (|+|'s NSSound's soundNamed:it) -- NSSound is asynchronous
-		alarmSound's play() -- sample
+		set my actionSound to (|+|'s NSSound's soundNamed:it) -- NSSound is asynchronous
+		actionSound's play() -- sample
 	end if
-	resetAlarmMenuState(sender's title as text)
+	resetActionMenuState(sender's title as text)
 end setAlarm:
 
 to startStop:sender -- (re)set the timer and main menu properties - tags are used for dynamic titles
@@ -563,7 +563,7 @@ to startStop:sender -- (re)set the timer and main menu properties - tags are use
 		(statusMenu's itemWithTag:200)'s setEnabled:state -- pause/continue
 		statusItem's button's setToolTip:(item ((state as integer) + 1) of {"Time Until Alarm", "Countdown Remaining"})
 	else
-		if alarmSound is not missing value then alarmSound's |stop|()
+		if actionSound is not missing value then actionSound's |stop|()
 		(statusMenu's itemWithTitle:"Reset")'s setEnabled:false
 		(statusMenu's itemWithTag:100)'s setTitle:"Start" -- start/stop
 		(statusMenu's itemWithTag:200)'s setEnabled:false -- pause/continue
@@ -605,7 +605,7 @@ on timePopover:sender -- handle buttons from the date picker popover
 		end if
 		tell (popover's contentViewController's title) as text to if it is "Duration" then
 			set my countdownTime to theTime
-			set my customHistory to my updateHistory(theTime, customHistory)
+			set my durationHistory to my updateHistory(theTime, durationHistory)
 			my resetTimeMenuState("Custom Duration…")
 		else if it is "Alarm Time" then
 			my setAlarmTime(theTime)
@@ -628,8 +628,8 @@ on scriptPopover:sender -- handle buttons from the script selection popover
 		set dictionary to popover's contentViewController's representedObject -- dictionary of scripts
 		set selected to (title of (first item of my getPopoverControls("NSPopupButton"))) as text
 		if selected is not in {"", "– No script selected –"} then -- check for previous setting
-			set my alarmScript to (dictionary's objectForKey:selected) as text
-			my resetAlarmMenuState("Run Script…")
+			set my userScriptPath to (dictionary's objectForKey:selected) as text
+			my resetActionMenuState("Run Script…")
 		end if
 	end if
 	tell popover to |close|()
@@ -695,17 +695,16 @@ to resetTimeMenuState(setting) -- (re)set state for a new time menu setting
 	my startStop:(missing value)
 end resetTimeMenuState
 
-to resetAlarmMenuState(setting) -- (re)set state for a new alarm menu setting
-	tell (alarmMenu's itemWithTitle:alarmSetting) to if it is not missing value then its setState:offState -- old
-	set my alarmSetting to setting
-	(alarmMenu's itemWithTitle:alarmSetting)'s setState:onState -- new
-end resetAlarmMenuState
+to resetActionMenuState(setting) -- (re)set state for a new action menu setting
+	tell (actionMenu's itemWithTitle:actionSetting) to if it is not missing value then its setState:offState -- old
+	set my actionSetting to setting
+	(actionMenu's itemWithTitle:actionSetting)'s setState:onState -- new
+end resetActionMenuState
 
 to resetTimer(mode)
 	if mode is "Start" then
 		if timer is not missing value then return
-		set my timer to |+|'s NSTimer's timerWithTimeInterval:1 target:me selector:"updateCountdown:" userInfo:(missing value) repeats:true -- restart with new timer
-		|+|'s NSRunLoop's mainRunLoop's addTimer:timer forMode:(|+|'s NSDefaultRunLoopMode)
+		set my timer to |+|'s NSTimer's scheduledTimerWithTimeInterval:1 target:me selector:"updateCountdown:" userInfo:(missing value) repeats:true -- restart with new timer
 		tell (current date) to set startTime to it + countdownTime -- see useStartTime
 	else
 		if timer is not missing value then timer's invalidate() -- don't leave a timer running
@@ -733,7 +732,7 @@ to getUserScripts() -- get user scripts - returns the current name and a diction
 		set {theResult, value} to (anItem's getResourceValue:(reference) forKey:"NSURLTypeIdentifierKey" |error|:(missing value)) -- (NSURLTypeIdentifierKey deprecated in Big Sur)
 		if theResult and ((value as text) is "com.apple.applescript.script") then -- only compiled scripts
 			set {theName, thePath} to {text 1 thru -6 of (anItem's lastPathComponent as text), (anItem's |path| as text)}
-			if thePath is alarmScript then set current to theName -- name of current script setting
+			if thePath is userScriptPath then set current to theName -- name of current script setting
 			(dictionary's setObject:thePath forKey:theName)
 		end if
 	end repeat
@@ -758,7 +757,7 @@ to getAllSounds() -- get sound names from the sound libraries (NSSearchPathDomai
 			set source to (first word of libraryPath)
 			if source ends with "s" then set source to text 1 thru -2 of source -- "User"
 			if source is "Library" then set source to "Local"
-			(subList's insertObject:(source & " Sounds") atIndex:0) -- section header - see addAlarmMenu
+			(subList's insertObject:(source & " Sounds") atIndex:0) -- section header - see addActionMenu
 			(soundList's addObjectsFromArray:subList)
 			subList's removeAllObjects()
 		end if
@@ -782,7 +781,7 @@ to getSounds() -- add from the app bundle (if present) or from all sound librari
 	if (soundList's |count|()) as integer is not 0 then
 		(soundList's setArray:(soundList's sortedArrayUsingSelector:"compare:"))
 		soundList's insertObject:"Bundle Sounds" atIndex:0
-		set beginning of actionMenuItems to "Preset Sounds" -- section header - see addAlarmMenu
+		set beginning of actionMenuItems to "Preset Sounds" -- section header - see addActionMenu
 		set actionMenuItems to actionMenuItems & (soundList as list)
 	end if
 end getSounds
@@ -968,14 +967,14 @@ to doOptionClick() -- handle a statusItem button option/right-click - the regula
 end doOptionClick
 
 to doAltActions() -- experimental support for user actions - repeatedly called by updateCountdown if altActions is true
-	try -- condition expression should be specific - return true to exit the current update
+	try -- condition expression should be specific to prevent repeated script runs - return true to exit the current update
 		return false -- still experimenting...
 		if countdown is -(10 * minutes) then -- example #1: check for a negative value (still running and late)
 			display notification "Reminder: The countdown expired 10 minutes ago." with title appName sound name "Basso" -- whatever - note that notifications for the script editor will need to be enabled
 		end if
-		if countdown is 5 then -- example #2: run the alarm script (assumes one of the Test scripts) at a specific countdown
-			if (runScript for alarmScript given arguments:countdown) is in {missing value, "restart"} then return true
-			# note that the alarmScript property contains the POSIX path of the (saved) user script in the userScriptsFolder
+		if countdown is 5 then -- example #2: run the action script (assumes one of the Test scripts) at a specific countdown
+			if (runScript from userScriptPath given arguments:countdown) is in {missing value, "restart"} then return true
+			# note that the userScriptPath property contains the POSIX path of the (saved) user script in the userScriptsFolder
 		end if
 	on error errmess number errnum -- handle a script or other error
 		showAlert from "doAltActions" for errmess given errnum:errnum
