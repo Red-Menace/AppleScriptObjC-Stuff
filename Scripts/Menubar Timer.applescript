@@ -1,24 +1,26 @@
 
 (*
-This script uses NSTimer to implement a repeating timer to count down once per second and provides a formatted "hh:mm:ss" countdown indication in a NSStatusItem in the system menu bar.  The status item includes menu items to adjust the countdown or alarm time and the action to perform when the countdown expires.  Timer settings can be selected from preset menu items or set from NSDatePicker controls presented in popover dialogs.  There is a countdown mode setting for a manual countdown or a check against the current time, but note that NSTimer is not an exact real-time mechanism.  
+This script uses NSTimer to implement a repeating timer to count down once per second and provides a formatted "hh:mm:ss" countdown indication in a NSStatusItem in the system menu bar.  The status item includes menu items to adjust the duration or alarm time and an action to perform when the countdown expires.  Timer settings can be selected from preset menu items or set from NSDatePicker controls presented in popover dialogs.  There is a countdown mode setting for a manual countdown or a check against the current time, but note that NSTimer is not an exact real-time mechanism.
+
+	• There is no preferences dialog, most are kept from the various menu selections.  For rarely-used settings such as intervalMaximum and allSounds, the defaults shell command can be used.
 		
 	• To keep the status item title and time settings consistent, the title and countdown/alarm time date pickers use a 24-hour format.
 		
-	• The status item title will show a countdown time with an icon and tooltip indicating if it is a duration or alarm time - the time setting will be shown when the timer is stopped, but will change to the time remaining when the timer is started.  Note that while the duration and alarm times both wrap at 24 hours, the duration will be from when the timer is started, while the alarm time will only match one time per day.
+	• The status item title will show a countdown time with an icon and tooltip indicating if it is a duration or alarm time - the time setting will be shown when the timer is stopped, and changes to the time remaining when the timer is started.  Note that the duration and alarm times both wrap at 24 hours, with the duration being from when the timer is started, while the alarm time will only match one time per day.
 	• When the countdown reaches 0, the status item title will flash and a sound (if set) will play until the timer is stopped or restarted.  A script can also be run (see below).
 		
 	• While the timer is running, the time remaining is shown in normal (green), caution (orange), and warning (red) colors.  These are determined from adjustable percentages of the intervalMaximum duration (default 3600 seconds/1 hour), or of the time setting if it is less than intervalMaximum.  The value of this property is also kept as a persistent app preference.
 	• Normal-to-caution and caution-to-warning interval settings can be made with sliders or by choosing from a "Presets" combo button (if available, otherwise the "Default" button will use the first item in the intervalMenuItems list).  Setting a percentage to zero will disable that color, and setting both to zero will disable all colors.
 		
-	• Preset times (menu item) can be customized by placing the desired items in the list for the timeMenuItems property.  The items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and durationTime properties for the matching initial default as desired.
-	• A custom duration setting that is the same as one of the time menu items will select that item instead.
-	• If you are running macOS 13.0 Ventura or later, the last 5 alarm times and custom durations are available in a comboButton in the respective popover.  New and reused settings are placed at the top of the list before trimming.
+	• Preset times (menu item) can be customized by placing the desired items in the list for the timeMenuItems property.  These items must be a number followed by "Hours", "Minutes", or "Seconds" - set the timeSetting and durationTime properties for the matching initial default as desired.
+	• A custom duration setting that has the same value as one of the time menu items will select that item instead.
+	• If you are running macOS 13.0 Ventura or later, the last 5 alarm times and custom durations are available in a NSComboButton in the respective popover.  New and reused settings are placed at the top of the list before trimming.
 		
-	• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a selected set of names from the standard system sounds, which are available in all current versions of macOS.  Set the actionSetting property for the matching initial default as desired.
+	• Preset sounds (menu item) can also be customized by placing the desired names in the list for the actionMenuItems property - sounds can be in any of the /Library/Sounds folders, but should have different names.  The default preset is a select set of names from the standard system sounds, which are available in all current versions of macOS.  Set the actionSetting property for the matching initial default as desired.
 	• Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu - to avoid clashes with sounds that have the same name, the bundle names can contain invisible characters such as a zero width space (character id 8203, UTF-16 U+200B, UTF-8 0xE2 0x80 0x8B).
-	• A property (allSounds) is used to flag an alternative to using preset/bundle sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are sorted and grouped by system > local > user, with separator items and headers used between sections.  Duplicate names (e.g. different extensions) in a group will be removed.  The value of this property is also kept as a persistent app preference.
+	• A property (allSounds) is used to flag an alternative to using preset/bundle sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are sorted and grouped by system > local > user, with separator items and headers used between sections.  Duplicate names (e.g. different extensions) in a group will be removed.  Sound names that are already in system or local sound folders will also be removed, as user sounds will override.  The value of this property is also kept as a persistent app preference.
 	• Pausing on the menu item for a sound will play a sample.
-	• The Menubar Timer can also be metronome(ish) by setting the time to zero and using a sound action - for best results a short sound (less than 1 second) should be used.
+	• The Menubar Timer can also be metronome(ish) by setting the time to zero and using a short sound action (less than 1 second for best results).
 		
 	• As an alternative to playing a sound, a user script can be run when the countdown reaches 0.  The script is run using the osascript command after launching ScriptMonitor.app.  This is a shared system application that shows a NSStatusItem with an animated gear icon in the menu bar, and is typically used for Script Menu items and Automator workflows.  The entries contain a cancel button and may include progress (for example, completed workflow actions or if a script uses the built-in progress statements).
 	• Although the application is not sandboxed (and AppleScriptObjC can't use NSUserAppleScriptTask's completion handler anyway), it still requires the scripts to be placed in the user's ~/Library/Application Scripts/<bundle-identifier> folder.  The app/script will create this folder as needed, which can also be revealed from the script setting popover.
@@ -34,11 +36,11 @@ This script uses NSTimer to implement a repeating timer to count down once per s
 	• Save as a stay-open application, and code sign or make the script read-only to keep accessibility permissions.
 	• Add a LSUIElement key to the application's Info.plist to make it an agent with no app menu or dock tile (background only).  The /Applications/Utilities/Activity Monitor.app can be used to quit an invisible background app, but note that system processes should be left alone unless you really know what you are doing.
 		
-	• Multiple timers are not supported, but multiple applications can be created with different names and bundle identifiers to keep the title, preferences, and script folders separate.
+	• Multiple timers are not supported, but multiple applications can be created with different names and bundle identifiers to keep the title, preferences, and script folders separate (the appName property is used as the first menu item).
 		
 	• Cocoa classes used include NSStatusBar, NSStatusItem, NSScreen, NSWindow, NSView, NSViewController, NSMenu, NSMenuItem, NSTimer, NSUserDefaults, NSFileManager, NSEvent, NSMutableArray, NSMutableDictionary, NSOrderedSet, NSMutableAttributedString, NSSound, NSColor, NSPopover, NSDate, NSDatePicker, NSButton, NSTextField, NSSlider, NSPopupButton, and NSComboButton.
 		
-Finally, note that when running from a script editor, if the script is recompiled, any statusItem left in the menu bar will remain (but will no longer function) until the script editor is restarted.  Also, errors may fail silently, so if debugging you can add say, beep, or try statements, display a dialog, etc.
+Finally, note that when running from a script editor, if the script is recompiled, previous statusItems in the menu bar will remain (but will no longer function) until the script editor is restarted.  Also, errors may fail silently, so if debugging you can add say, beep, or try statements, display a dialog, etc.
 *)
 
 
@@ -48,7 +50,7 @@ use scripting additions
 
 # App properties - these are used when running in a script editor to access the appropriate user scripts folder.
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
-property idPrefix : "com.yourcompany" -- com.apple.ScriptEditor.id (or whatever)
+property idPrefix : "com.your-company" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first (disabled) menu item as a title
 property version : "3.12" -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
 
@@ -60,9 +62,9 @@ property offState : a reference to |+|'s NSControlStateValueOff -- 0
 -->> User defaults (persistent app preferences)
 property colorIntervals : {0.35, 0.1} -- normal-to-caution and caution-to-warning color change percentages
 property durationTime : 3600 -- current countdown duration (seconds of the custom or selected duration)
-property alarmTime : 0 -- current target time-of-day (if it is set and not expired)
-property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list) + "Custom Duration…" and "Set Alarm…"
-property actionSetting : "Basso" -- current action setting (from actionMenuItems list) + "Off" and "Run Script…"
+property alarmTime : 0 -- current target time-of-day (if set)
+property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list + "Custom Duration…" and "Set Alarm…")
+property actionSetting : "Basso" -- current action setting (from actionMenuItems list + "Off" and "Run Script…")
 property userScriptPath : "" -- POSIX path to a user script
 property useStartTime : false -- calculate from the time started vs a manual countdown when not paused or blocked
 property durationHistory : {} -- previous 5 custom duration settings
@@ -92,7 +94,7 @@ property popoverControls : {} -- this will be a list of the current popover cont
 
 -->> Preset values
 property intervalMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- color change percentages
-property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"}
+property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"} -- default
 property actionMenuItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Purr", "Sosumi", "Submarine"} -- default
 property bundleSounds : {} -- this will be a list of instances for any sounds from the application bundle
 property soundExtensions : {"aac", "aiff", "m4a", "m4r", "mp3", "mp4", "wav"} -- acceptable sound file extensions
@@ -100,7 +102,7 @@ property soundTimeout : 0 -- seconds to discontinue alarm sound (0 to disable) -
 
 -->> Globals
 global userScriptsFolder -- where the user scripts are located
-global menuTimes -- a list of records containing {menuTitle, itemSeconds}
+global menuTimes -- a list of time menu item records {menuTitle:title, itemSeconds:seconds} for comparisons
 global titleFont -- font used by the statusItem button title
 global textColors -- a list of statusItem text colors
 global countdown -- the current countdown time (seconds)
@@ -114,7 +116,7 @@ global soundSample -- a record {instance:NSSound, timer:NSTimer} for playing sou
 -->> Main Handlers
 ##############################
 
-on run -- example will run as a stay-open app and from a script editor for testing/development
+on run -- stay-open app and from a script editor for testing/development
 	if (name of |+|) is in {"Script Editor", "Script Debugger"} then set my testing to true
 	if |+|'s NSThread's isMainThread() as boolean then -- app
 		initialize()
@@ -687,7 +689,7 @@ to setAlarmTime(theSeconds)
 		if (theSeconds - (time of (current date))) < 0 then -- note that the alarm time has passed
 			activate me
 			display alert "Setting Alarm Time" message "The specified alarm time may be set, but note that it is earlier than the current time." buttons {"Cancel", "OK"} cancel button "Cancel" default button "OK" giving up after 15
-			if gave up of the result then error
+			if gave up of the result then error -- skip
 		end if
 		set my alarmTime to theSeconds
 		set my alarmHistory to my updateHistory(theSeconds, alarmHistory)
@@ -771,9 +773,12 @@ to getAllSounds() -- get sound names from the sound libraries (NSSearchPathDomai
 	tell |+|'s NSMutableArray to set {soundList, subList} to {its alloc()'s init(), its alloc()'s init()}
 	repeat with libraryPath in reverse of (((|+|'s NSSearchPathForDirectoriesInDomains(|+|'s NSLibraryDirectory, 11, true))'s objectEnumerator())'s allObjects as list) -- /System/Library, /Library, /Users/<user>/Library
 		repeat with anItem in (getFolderContents from libraryPath given subfolder:"Sounds")
-			tell anItem's |path| to if ((its pathExtension) as text) is in soundExtensions then (subList's addObject:(its lastPathComponent's stringByDeletingPathExtension as text)) -- don't try to add non-sound items
+			tell anItem's |path| to if ((its pathExtension) as text) is in soundExtensions then -- don't try to add non-sound items
+				set candidate to (its lastPathComponent's stringByDeletingPathExtension) as text
+				if not (subList's containsObject:candidate) then (subList's addObject:candidate) -- skip duplicates
+			end if
 		end repeat
-		(subList's removeObjectsInArray:soundList) -- the first match will be used, so remove duplicate names
+		(subList's removeObjectsInArray:soundList) -- remove sounds already in the main list (from previous directories)
 		if (subList's |count|()) as integer is not 0 then
 			(subList's setArray:(subList's sortedArrayUsingSelector:"compare:"))
 			set source to (first word of libraryPath)
