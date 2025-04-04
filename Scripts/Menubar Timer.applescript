@@ -73,7 +73,7 @@ property intervalMaximum : 3600 -- maximum duration for use with the interval pe
 property allSounds : false -- load sounds from all libraries instead of app/preset
 
 -->> Option settings
-property optionClick : false -- support statusItem button option/right-click? -- see the doOptionClick handler
+property optionClick : true -- support statusItem button option/right-click? -- see the doOptionClick handler
 property altActions : false -- experimental support for alternate actions -- see the doAltAction handler
 property testing : false -- a flag to indicate testing so that preferences are not updated, etc
 
@@ -523,7 +523,7 @@ to updateCountdown:_timer -- update the statusItem title and check countdown (re
 	if countdown ≤ 0 then -- action - note that the countdown can be negative
 		doAction()
 	else -- continue - note that for the (experimental) doAltActions, alarm and mode conditions may be skipped when starting
-		if alarmTime > 0 and timeSetting is "Set Alarm…" then -- calculate time remaining to alarm
+		if alarmTime ≥ 0 and timeSetting is "Set Alarm…" then -- calculate time remaining to alarm
 			set countdown to alarmTime - (time of (current date))
 		else -- duration countdown - by 1 (count mode) or calculate remaining time (clock mode)
 			set countdown to (item ((useStartTime as integer) + 1) of {countdown - 1, startTime - (current date)})
@@ -617,11 +617,11 @@ on timePopover:sender -- handle buttons from the date picker popover
 					exit repeat
 				end if
 			end repeat
-			if durationTime is not theTime then -- continue with custom duration
+			if durationTime is not theTime then -- update custom duration
 				set my durationTime to theTime
 				set my durationHistory to my updateHistory(theTime, durationHistory)
-				my resetTimeMenuState("Custom Duration…")
 			end if
+			my resetTimeMenuState("Custom Duration…")
 		else if it is "Alarm Time" then
 			my setAlarmTime(theTime)
 		end if
