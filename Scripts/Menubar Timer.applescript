@@ -506,7 +506,7 @@ end buildIntervalControls
 -->> BE CAREFUL if using multiple editors - Script Debugger needs "type" to be escaped, while Script Editor will remove the escaping.
 on statusItemAction:_sender -- handle option/right-click
 	if not optionClick then return
-	set eventType to (|+|'s NSApp's currentEvent's type {}) as integer -- pay attention to the escaping for "type"
+	set eventType to (|+|'s NSApp's currentEvent's |type|()) as integer -- pay attention to the escaping for "type"
 	if eventType is (|+|'s NSEventTypeLeftMouseDown) as integer then -- normal left click, so...
 		statusItem's setMenu:statusMenu -- ...add menu to button...
 		statusItem's button's performClick:me -- ...then click it again to show the menu
