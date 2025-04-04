@@ -52,7 +52,7 @@ use scripting additions
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
 property idPrefix : "com.your-company" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first (disabled) menu item as a title
-property version : "3.12" -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
+property version : "3.13" -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
 
 -->> Cocoa API references
 property |+| : current application -- just a shortcut (that it looks like a first aid kit is merely a coincidence)
