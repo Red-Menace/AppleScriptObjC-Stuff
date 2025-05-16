@@ -192,13 +192,13 @@ end script
 	----- Example -----
 		
 	Typical operation for script object/class:
-		¥ set up cancel button action as needed
-		¥ create progress controller
-		¥ adjust settings
-		¥ show the progress window
-		¥ place progress updates in the item processing loop
+		â€¢ set up cancel button action as needed
+		â€¢ create progress controller
+		â€¢ adjust settings
+		â€¢ show the progress window
+		â€¢ place progress updates in the item processing loop
 			periodically check the 'stopProgress' property for cancel
-		¥ close the progress window
+		â€¢ close the progress window
 *)
 
 property controller : missing value -- this will be the progress controller instance
