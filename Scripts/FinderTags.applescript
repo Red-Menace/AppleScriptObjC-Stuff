@@ -87,7 +87,7 @@ end getTagInfo
 
 to getTagDict() -- get a dictionary from the appropriate property list
 	set basePath to POSIX path of (path to library folder from user domain)
-	if (get system attribute "sys1") > 11 then -- from sqlite database in macOS 12 Monterey and greater
+	if (get system attribute "sys1") > 11 then -- from sqlite database in macOS 12 Monterey thru macOS 13 Ventura
 		set prefsPath to basePath & "SyncedPreferences/com.apple.kvs/com.apple.KeyValueService-Production.sqlite"
 		set query to "select hex(ZPLISTDATAVALUE) from ZSYDMANAGEDKEYVALUE where ZKEY = 'FinderTagDict';"
 		set plist to (do shell script "sqlite3 " & prefsPath & space & quoted form of query & " | xxd -r -p | plutil -convert xml1 -o - -") -- get binary plist from database and convert
