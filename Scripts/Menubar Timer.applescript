@@ -619,15 +619,15 @@ on timePopover:sender -- handle buttons from the date picker popover
 		tell (popover's contentViewController's title) as text to if it is "Duration" then
 			repeat with anItem in menuTimes
 				if theTime is anItem's itemSeconds then -- the time is one of the menu settings
-					(my setMenuTime:{title:(anItem's menuTitle)}) -- select the menu item instead
+					(my setMenuTime:{title:(anItem's menuTitle)}) -- select the menu item instead (durationTime is updated)
 					exit repeat
 				end if
 			end repeat
 			if durationTime is not theTime then -- update custom duration
 				set my durationTime to theTime
 				set my durationHistory to my updateHistory(theTime, durationHistory)
+				my resetTimeMenuState("Custom Duration…")
 			end if
-			my resetTimeMenuState("Custom Duration…")
 		else if it is "Alarm Time" then
 			my setAlarmTime(theTime)
 		end if
