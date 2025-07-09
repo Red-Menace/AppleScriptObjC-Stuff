@@ -2,7 +2,7 @@
 (*
 This script uses NSTimer to implement a repeating timer to count down seconds, and provides a formatted "hh:mm:ss" indication of time remaining in a NSStatusItem in the system menu bar.  The status item includes menu items to adjust the duration or alarm time and an action to perform when the countdown expires.  Timer settings can be selected from preset menu items or set from NSDatePicker controls presented in popover dialogs.  There is a countdown mode setting for a manual countdown or a check against the current time, but note that NSTimer is not an exact real-time mechanism.
 
-	• There is no preferences dialog, settings are kept from the various menu selections.  For rarely-used settings such as intervalMaximum and allSounds, the defaults shell command can be used.
+	• Although there is no preferences dialog, settings are kept from the various menu selections.  For rarely-used settings such as intervalMaximum and allSounds, the defaults shell command can be used.
 		
 	• The status item title and countdown/alarm time date pickers use a 24-hour format to keep the time settings and displays consistent.
 		
@@ -32,14 +32,14 @@ This script uses NSTimer to implement a repeating timer to count down seconds, a
 			▫︎ Returning "restart" will restart the timer (unless using an alarm time, since it will have expired).
 			▫︎ Returning "continue" will let the countdown continue if using alternate actions (experimental).
 		
-	• A property (optionClick) is included to enable different functionality when option/right-clicking the status item.  When true, a handler (doOptionClick) will be called instead of showing the menu.  This can be used for something separate from the menu such as an about panel (default), help/instructions, etc.
+	• A property (optionClick) is included to enable different functionality when option/right-clicking the status item.  When true, a handler (doOptionClick) will be called instead of showing the menu.  This can be used for something separate from the menu such as an about panel (default), help/instructions, etc.  Note that this clears the button menu to prevent showing the menu, which also prevents selecting the statusItem using keyboard navigation.
 		
 	• To make into an application, save as stay-open and code sign or make the script read-only to keep accessibility permissions.
 	• If desired, add a LSUIElement key to the application's Info.plist to make it an agent with no app menu or dock tile (background only).  The /Applications/Utilities/Activity Monitor.app can be used to quit an invisible background app, but note that system processes should be left alone unless you really know what you are doing.
 		
 	• Multiple timers are not supported, but multiple applications can be created with different names and bundle identifiers to keep the title, preferences, and script folders separate (the appName property is used as the first menu item).
 		
-	• Cocoa classes used include NSStatusBar, NSStatusItem, NSScreen, NSWindow, NSView, NSViewController, NSMenu, NSMenuItem, NSTimer, NSUserDefaults, NSFileManager, NSEvent, NSMutableArray, NSMutableDictionary, NSOrderedSet, NSMutableAttributedString, NSSound, NSColor, NSPopover, NSDate, NSDatePicker, NSButton, NSTextField, NSSlider, NSPopupButton, and NSComboButton.
+	• AppKit classes include the controls NSButton, NSComboButton, NSDatePicker, NSMenu, NSMenuItem, NSPopover, NSPopupButton, NSSlider, NSStatusBar, NSStatusItem, NSTextField, NSView, NSViewController, and NSWindow, with other UI items NSColor, NSEvent, NSScreen, and NSSound.  Foundation classes include NSDate, NSFileManager, NSMutableArray, NSMutableAttributedString, NSMutableDictionary, NSOrderedSet, NSTimer, and NSUserDefaults.
 		
 Finally, note that when running in a script editor, if the script is recompiled, previous statusItems left in the menu bar will remain (but will no longer function) until the script editor is restarted.  Also, errors may fail silently, so when debugging you can add say, beep, or try statements, display a dialog, etc.
 *)
@@ -51,66 +51,66 @@ use scripting additions
 
 # App properties - these are used when running in a script editor to access the appropriate user scripts folder.
 # The application bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
-property idPrefix : "com.your-company" -- com.apple.ScriptEditor.id (or whatever)
 property appName : "Menubar Timer" -- also used for the first menu item as a title (disabled)
-property version : "3.14" -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
+property idPrefix : "com.your-company" -- com.apple.ScriptEditor.id (or whatever)
+property version : "3.15" -- macOS 13 Ventura or later for NSComboButton (alternate should run in earlier versions)
 
 -->> Cocoa API references
 property |+| : current application -- just a shortcut (that it looks like a first aid kit is merely a coincidence)
-property onState : a reference to |+|'s NSControlStateValueOn -- 1
 property offState : a reference to |+|'s NSControlStateValueOff -- 0
+property onState : a reference to |+|'s NSControlStateValueOn -- 1
 
 -->> User defaults (persistent app preferences)
-property colorIntervals : {0.35, 0.1} -- normal-to-caution and caution-to-warning color change percentages
-property durationTime : 3600 -- current countdown duration (seconds of the custom or selected duration)
-property alarmTime : 0 -- current target time-of-day (if set)
-property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list + "Custom Duration…" and "Set Alarm…")
 property actionSetting : "Basso" -- current action setting (from actionMenuItems list + "Off" and "Run Script…")
+property alarmHistory : {} -- previous 5 alarm time settings
+property alarmTime : 0 -- current target time-of-day (if set)
+property colorIntervals : {0.35, 0.1} -- normal-to-caution and caution-to-warning color change percentages
+property durationHistory : {} -- previous 5 custom duration settings
+property durationTime : 3600 -- current countdown duration (seconds of the custom or selected duration)
+property intervalMaximum : 3600 -- maximum duration for use with the interval percentages
+property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list + "Custom Duration…" and "Set Alarm…")
 property userScriptPath : "" -- POSIX path to a user script
 property useStartTime : true -- calculate from the time started vs a manual countdown when not paused or blocked
-property durationHistory : {} -- previous 5 custom duration settings
-property alarmHistory : {} -- previous 5 alarm time settings
-property intervalMaximum : 3600 -- maximum duration for use with the interval percentages
-property allSounds : false -- load sounds from all libraries instead of app/preset
 
 -->> Option settings
-property optionClick : true -- support statusItem button option/right-click? -- see the doOptionClick handler
+property allSounds : false -- load sounds from all libraries instead of app/preset
 property altActions : false -- experimental support for alternate actions -- see the doAltAction handler
+property optionClick : true -- support statusItem button option/right-click? -- see the doOptionClick handler
 
 -->> Menu item outlets
+property actionMenu : missing value -- this will be a menu of the actions
+property actionSound : missing value -- this will be the selected sound
+property attrText : missing value -- this will be an attributed string (color, font, etc) for the statusItem title
 property statusItem : missing value -- this will be the status bar item
 property statusMenu : missing value -- this will be a menu for the statusItem
 property timeMenu : missing value -- this will be a menu of the times
-property actionMenu : missing value -- this will be a menu of the actions
 property timer : missing value -- this will be a repeating timer
-property attrText : missing value -- this will be an attributed string (color, font, etc) for the statusItem title
-property actionSound : missing value -- this will be the selected sound
 
 -->> Popover outlets
-property positioningWindow : missing value -- this will be a 1 point high window to position the popover
 property popover : missing value -- this will be a popover for the various settings
-property viewController : missing value -- this will be the view controller and view for the current popover controls
 property popoverControls : {} -- this will be a list of the current popover control records {control class, control}
+property positioningWindow : missing value -- this will be a 1 point high window to position the popover
+property viewController : missing value -- this will be the view controller and view for the current popover controls
 
 -->> Preset values
-property intervalMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- color change percentages
-property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"} -- default
 property actionMenuItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Purr", "Sosumi", "Submarine"} -- default
 property bundleSounds : {} -- this will be a list of instances for any sounds from the application bundle
+property intervalMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- color change percentages
 property soundExtensions : {"aac", "aiff", "m4a", "m4r", "mp3", "mp4", "wav"} -- acceptable sound file extensions
 property soundTimeout : 0 -- seconds to discontinue alarm sound (0 to disable) - statusItem will still flash
+property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"} -- default
 
 -->> Globals
-global usingEditor -- a flag to indicate running in a script editor
-global userScriptsFolder -- where the user scripts are located
-global menuTimes -- a list of records for time menu item comparisons {menuTitle:title, itemSeconds:seconds}
-global titleFont -- font used by the statusItem button title
-global textColors -- a list of statusItem text colors
 global countdown -- the current countdown time (seconds)
-global startTime -- the time the countdown timer was started (seconds)
-global isPaused -- a flag for pausing the timer update
 global flasher -- a flag used to flash the statusItem button title
+global isPaused -- a flag for pausing the timer update
+global menuTimes -- a list of records for time menu item comparisons {menuTitle:title, itemSeconds:seconds}
 global soundSample -- a record for playing sound samples {instance:NSSound, timer:NSTimer}
+global targetTime -- the duration timeout based on the countdown starting time (seconds) - see useStartTime property
+global textColors -- a list of statusItem text colors
+global titleFont -- font used by the statusItem button title
+global userScriptsFolder -- where the user scripts are located
+global usingEditor -- a flag to indicate running in a script editor
 
 
 ##############################
@@ -156,7 +156,7 @@ to doAction() -- do something when the countdown expires (≤ 0, countdown conti
 		if actionSetting is not "Off" and actionSound is not missing value then
 			if (soundTimeout is 0) or (soundTimeout + countdown) > 0 then actionSound's play() -- continue
 		end if
-		set countdown to (item ((useStartTime as integer) + 1) of {countdown - 1, startTime - (current date)}) -- continue
+		set countdown to (item ((useStartTime as integer) + 1) of {countdown - 1, targetTime - (current date)}) -- continue
 		setAttributedTitle(countdown) -- update statusItem title (flash) - negative countdown will show zero
 	end if
 end doAction
@@ -166,7 +166,7 @@ to runScript from (posixPath as text) given arguments:arguments as list : {} -- 
 	repeat with anItem in arguments -- prepare arguments for the shell script
 		set args to args & space & quoted form of (anItem as text)
 	end repeat
-	do shell script "open -g /System/Library/CoreServices/ScriptMonitor.app" -- system background app to show script status
+	do shell script "open -g /System/Library/CoreServices/ScriptMonitor.app" -- system LSUIElement app for showing script/workflow activity
 	handleResults(do shell script "osascript -P " & (quoted form of posixPath) & args) -- run with ScriptMonitor
 end runScript
 
@@ -187,36 +187,35 @@ to handleResults(response as text) -- handle script results (if any)
 end handleResults
 
 to readDefaults()
+	if usingEditor then return -- no preferences if running in a script editor
 	tell standardUserDefaults() of |+|'s NSUserDefaults
 		its registerDefaults:{actionSetting:actionSetting, colorIntervals:colorIntervals, durationTime:durationTime, alarmTime:alarmTime, timeSetting:timeSetting, userScriptPath:userScriptPath, useStartTime:useStartTime, durationHistory:durationHistory, alarmHistory:alarmHistory, intervalMaximum:intervalMaximum, allSounds:allSounds}
-		tell (its valueForKey:"ActionSetting") to if it ≠ missing value then set my actionSetting to (it as text)
-		tell (its valueForKey:"Intervals") to if it ≠ missing value then set my colorIntervals to (it as list)
-		tell (its valueForKey:"DurationTime") to if it ≠ missing value then set my durationTime to (it as integer)
-		tell (its valueForKey:"AlarmTime") to if it ≠ missing value then set my alarmTime to (it as integer)
-		tell (its valueForKey:"TimeSetting") to if it ≠ missing value then set my timeSetting to (it as text)
-		tell (its valueForKey:"ScriptPath") to if it ≠ missing value then set my userScriptPath to (it as text)
-		tell (its valueForKey:"UseStartTime") to if it ≠ missing value then set my useStartTime to (it as boolean)
-		tell (its valueForKey:"DurationHistory") to if it ≠ missing value then set my durationHistory to (it as list)
-		tell (its valueForKey:"AlarmHistory") to if it ≠ missing value then set my alarmHistory to (it as list)
-		tell (its valueForKey:"IntervalMaximum") to if it ≠ missing value then set my intervalMaximum to (it as integer)
-		tell (its valueForKey:"AllSounds") to if it ≠ missing value then set my allSounds to (it as boolean)
+		set my actionSetting to (its valueForKey:"ActionSetting") as text
+		set my alarmHistory to (its valueForKey:"AlarmHistory") as list
+		set my alarmTime to (its valueForKey:"AlarmTime") as integer
+		set my colorIntervals to (its valueForKey:"Intervals") as list
+		set my durationHistory to (its valueForKey:"DurationHistory") as list
+		set my durationTime to (its valueForKey:"DurationTime") as integer
+		set my intervalMaximum to (its valueForKey:"IntervalMaximum") as integer
+		set my timeSetting to (its valueForKey:"TimeSetting") as text
+		set my userScriptPath to (its valueForKey:"ScriptPath") as text
+		set my useStartTime to (its valueForKey:"UseStartTime") as boolean
 	end tell
 end readDefaults
 
 to writeDefaults()
-	if usingEditor then return -- don't update preferences if running in a script editor
+	if usingEditor then return -- don't add preferences if running in a script editor
 	tell standardUserDefaults() of |+|'s NSUserDefaults
 		its setValue:(actionSetting as text) forKey:"ActionSetting"
-		its setValue:(colorIntervals as list) forKey:"Intervals"
-		its setValue:(durationTime as integer) forKey:"DurationTime"
+		its setValue:(alarmHistory as list) forKey:"AlarmHistory"
 		its setValue:(alarmTime as integer) forKey:"AlarmTime"
+		its setValue:(colorIntervals as list) forKey:"Intervals"
+		its setValue:(durationHistory as list) forKey:"DurationHistory"
+		its setValue:(durationTime as integer) forKey:"DurationTime"
+		its setValue:(intervalMaximum as integer) forKey:"IntervalMaximum"
 		its setValue:(timeSetting as text) forKey:"TimeSetting"
 		its setValue:(userScriptPath as text) forKey:"ScriptPath"
 		its setValue:(useStartTime as boolean) forKey:"UseStartTime"
-		its setValue:(durationHistory as list) forKey:"DurationHistory"
-		its setValue:(alarmHistory as list) forKey:"AlarmHistory"
-		its setValue:(intervalMaximum as integer) forKey:"IntervalMaximum"
-		its setValue:(allSounds as boolean) forKey:"AllSounds"
 	end tell
 end writeDefaults
 
@@ -244,8 +243,7 @@ end quit
 ##############################
 
 # To handle an option/right click without showing the statusItem menu, the statusItem menu is cleared
-# and then reset in the button's action method for a regular left click.  If doing something like quit,
-# menuWillOpen can be used instead since the menu won't matter.
+# and will be set in the button's action method according to the mouse event.
 on menuDidClose:_sender
 	if optionClick then statusItem's setMenu:(missing value)
 end menuDidClose:
@@ -285,7 +283,7 @@ to buildStatusItem() -- build the menu bar status item
 		if optionClick then -- menu will be set in in the button action
 			its (button's setTarget:me)
 			its (button's setAction:"statusItemAction:")
-			its (button's sendActionOn:15) -- probably more than needed, mask combinations are different than NSEvent
+			its (button's sendActionOn:10) -- NSEventMaskLeftMouseDown + NSEventMaskRightMouseDown
 		else
 			its setMenu:statusMenu
 		end if
@@ -374,11 +372,11 @@ end addSettings
 to setAttributedTitle(theTime) -- set the statusItem button's attributed string title (for colors)
 	attrText's addAttribute:"NSColor" value:(|+|'s NSColor's darkGrayColor) range:{0, attrText's |length|()} -- default
 	attrText's replaceCharactersInRange:{0, attrText's |length|()} withString:formatTime(theTime)
-	set targetTime to item (((timeSetting is "Set Alarm…" or durationTime > intervalMaximum) as integer) + 1) of {durationTime, intervalMaximum} -- current duration or maximum for time percentages
+	set intervalTime to item (((timeSetting is "Set Alarm…" or durationTime > intervalMaximum) as integer) + 1) of {durationTime, intervalMaximum} -- current duration or maximum for time percentages
 	tell colorIntervals to if it is not {0.0, 0.0} then -- start with normal, then overwrite to allow a color disable
 		attrText's addAttribute:"NSColor" value:(first item of textColors) range:{0, attrText's |length|()} -- normal
-		if its first item is not 0.0 and theTime ≤ ((its first item) * targetTime) then attrText's addAttribute:"NSColor" value:(second item of textColors) range:{0, attrText's |length|()} -- caution
-		if its second item is not 0.0 and theTime ≤ ((its second item) * targetTime) then attrText's addAttribute:"NSColor" value:(third item of textColors) range:{0, attrText's |length|()} -- warning
+		if its first item is not 0.0 and theTime ≤ ((its first item) * intervalTime) then attrText's addAttribute:"NSColor" value:(second item of textColors) range:{0, attrText's |length|()} -- caution
+		if its second item is not 0.0 and theTime ≤ ((its second item) * intervalTime) then attrText's addAttribute:"NSColor" value:(third item of textColors) range:{0, attrText's |length|()} -- warning
 	end if
 	if theTime < 0 then
 		set flasher to not flasher
@@ -508,15 +506,17 @@ end buildIntervalControls
 -->> Action Handlers
 ##############################
 
+# Handle option/right-click - the statusItem menu needs to be set to select it using keyboard navigation.
+# Note that the NSEventMask used to send the action is different than the NSEventType.
 on statusItemAction:_sender -- handle option/right-click
 	if not optionClick then return
 	# `run script` is used in the following statement to handle NSEvent's `type` property with multiple editors - in Script Debugger the term needs to be escaped, while Script Editor will remove any escaping.
 	set eventType to (run script "use framework \"Foundation\"
 	return current application's NSApp's currentEvent's |type|") as integer -- avoids different editor escaping for `type`
-	if eventType is (|+|'s NSEventTypeLeftMouseDown) as integer then -- normal left click, so...
+	if eventType is (|+|'s NSEventTypeLeftMouseDown) as integer then -- (1) normal left click, so...
 		statusItem's setMenu:statusMenu -- ...add menu to button...
 		statusItem's button's performClick:me -- ...then click it again to show the menu
-	else if eventType is (|+|'s NSEventTypeRightMouseDown) as integer then -- option/right click, so do something else
+	else if eventType is (|+|'s NSEventTypeRightMouseDown) as integer then -- (3) option/right click, so do something else
 		doOptionClick()
 	end if
 end statusItemAction:
@@ -532,9 +532,9 @@ to updateCountdown:_timer -- update the statusItem title and check countdown (re
 		if alarmTime ≥ 0 and timeSetting is "Set Alarm…" then -- calculate time remaining to alarm
 			set countdown to alarmTime - (time of (current date))
 		else -- duration countdown - by 1 (count mode) or calculate remaining time (clock mode)
-			set countdown to (item ((useStartTime as integer) + 1) of {countdown - 1, startTime - (current date)})
+			set countdown to (item ((useStartTime as integer) + 1) of {countdown - 1, targetTime - (current date)})
 		end if
-		if countdown < 0 then set {countdown, startTime} to {0, (current date)} -- reset for counting past expiration
+		if countdown < 0 then set {countdown, targetTime} to {0, (current date)} -- reset for counting past expiration
 		setAttributedTitle(countdown)
 	end if
 end updateCountdown:
@@ -725,14 +725,14 @@ to resetTimer(mode as text)
 	if mode is "Start" then
 		if timer is not missing value then return
 		set my timer to |+|'s NSTimer's scheduledTimerWithTimeInterval:1 target:me selector:"updateCountdown:" userInfo:(missing value) repeats:true -- restart with new timer
-		tell (current date) to set startTime to it + durationTime -- see useStartTime
+		tell (current date) to set targetTime to it + durationTime -- see useStartTime
 	else
 		if timer is not missing value then timer's invalidate() -- don't leave a timer running
-		set {my timer, startTime} to {missing value, 0}
+		set {my timer, targetTime} to {missing value, 0}
 	end if
 end resetTimer
 
-to setIntervals() -- get normal > caution and caution > warning interval percentages (0-1)
+to setIntervals() -- get normal > caution and caution > warning interval percentages (0.0-1.0)
 	buildIntervalControls()
 	showPopover()
 end setIntervals
@@ -945,7 +945,7 @@ to unformatTime(formattedString as text)
 	return (hh * 3600) + (mm * 60) + ss
 end unformatTime
 
-# Format a floating point number, rounding away from 0.
+# Format a floating point number for display, rounding away from 0.
 to formatFloat(float as real)
 	tell |+|'s NSNumberFormatter's alloc()'s init()
 		its setMinimumFractionDigits:3
