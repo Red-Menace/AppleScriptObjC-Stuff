@@ -13,6 +13,8 @@ A few ASObjC scripts demonstrating the usage of various Cocoa classes.  These sh
     * NSStatusBar, NSMenu, NSMenuItem, NSViewController, NSTimer, NSUserDefaults, NSFileManager, NSEvent, NSMutableArray, NSMutableDictionary, NSMutableAttributedString, NSSound, NSColor, NSPopover, NSDatePicker, NSButton, NSTextField, NSSlider, NSPopupButton, NSComboButton.
 * *Choose from List Alert - a NSAlert with a tableView accessory view to approximate AppleScript's "choose from list".
    * NSAlert, NSTableView, NSScrollView, NSMutableArray, NSMutableDIctionary, NSMutableAttributedString, NSMutableParagraphStyle
+* *ChooseDate Alert - a "choose date" implementation using a NSDatePicker and label NSTextField that cover the NSAlert views.
+    * NSAlert, NSView, NSDatePicker, NSTextField
 * *Popover - shows a popover at a button location when it is clicked.
 	* NSWindow, NSButton, NSTextField, NSView,NSViewController, NSPopover, NSFont, NSColor
 * *Contextual Menu - shows a NSMenu at a location on the screen or relative to a window or panel.
