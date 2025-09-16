@@ -68,7 +68,7 @@ property durationHistory : {} -- previous 5 custom duration settings
 property durationTime : 3600 -- current countdown duration (seconds of the custom or selected duration)
 property intervalThreshold : 3600 -- threshold before using the colorInterval percentages
 property scriptPath : "" -- POSIX path to a user script
-property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list + "Custom Duration…" and "Set Alarm…")
+property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list + "Custom Duration…" and "Alarm Time…")
 
 -->> Option Settings
 property altActions : false -- experimental support for alternate actions -- see the `doAltAction` handler
@@ -185,7 +185,7 @@ to runScript from (posixPath as text) given arguments:arguments as list : {} -- 
 end runScript
 
 to proceedWith:(response as text) -- handle loop restart or script results
-	if (response is "restart") and (timeSetting is not "Set Alarm…") then
+	if (response is "restart") and (timeSetting is not "Alarm Time…") then
 		if timer is not missing value then timer's invalidate() -- use a new timer
 		set my timer to missing value
 		my startStop:{title:"Start"} -- reset the countdown and continue
@@ -300,7 +300,7 @@ to buildStatusItem() -- build the menu bar status item
 		its (button's setFont:buttonFont)
 		its (button's setImagePosition:(|+|'s NSImageLeft)) -- for clock and alarm clock images
 		its (button's setTitle:(my formatTime(durationTime)))
-		its (button's setToolTip:(item (((timeSetting is "Set Alarm…") as integer) + 1) of {"Countdown Duration", "Alarm Time"}))
+		its (button's setToolTip:(item (((timeSetting is "Alarm Time…") as integer) + 1) of {"Countdown Duration", "Alarm Time"}))
 		if optionClick then -- menu will be set in in the button action
 			its (button's setTarget:me)
 			its (button's setAction:"statusItemAction:")
@@ -348,7 +348,7 @@ to addTimeMenu(theMenu) -- submenu for the countdown times
 		my (addMenuItem to it) ---- separator menu item
 		my (addMenuItem to it given title:"Custom Duration…", action:"getTime:", state:(timeSetting is "Custom Duration…"))
 		result's setToolTip:"Custom Countdown Duration"
-		my (addMenuItem to it given title:"Set Alarm…", action:"getTime:", state:(timeSetting is "Set Alarm…"))
+		my (addMenuItem to it given title:"Alarm Time…", action:"getTime:", state:(timeSetting is "Alarm Time…"))
 		result's setToolTip:"Time of Day"
 	end tell
 	(theMenu's addItemWithTitle:"Time" action:(missing value) keyEquivalent:"")'s setSubmenu:timeMenu
@@ -401,7 +401,7 @@ to setAttributedStrings(theTime) -- set the statusItem button and window textFie
 	repeat with obj in {attrButtonText, attrWindowText}
 		(obj's replaceCharactersInRange:{0, obj's |length|()} withString:formatTime(theTime))
 	end repeat
-	set intervalTime to item ((((timeSetting is "Set Alarm…") or (durationTime > intervalThreshold)) as integer) + 1) of {durationTime, intervalThreshold} -- current duration or `intervalThreshold` for color changes
+	set intervalTime to item ((((timeSetting is "Alarm Time…") or (durationTime > intervalThreshold)) as integer) + 1) of {durationTime, intervalThreshold} -- current duration or `intervalThreshold` for color changes
 	set theColor to textColor of standardColors
 	tell colorIntervals to if it is not {0.0, 0.0} then -- overwrite to allow individual color disable
 		set theColor to (normal of textColors)
@@ -578,7 +578,7 @@ to updateCountdown:_timer -- update statusItem and timer window and check countd
 	if countdown ≤ 1 then -- action - note that the countdown can be negative
 		doAction()
 	else -- continue
-		if (alarmTime ≥ 1) and (timeSetting is "Set Alarm…") then -- calculate time remaining to alarm
+		if (alarmTime ≥ 1) and (timeSetting is "Alarm Time…") then -- calculate time remaining to alarm
 			set countdown to alarmTime - (time of (current date))
 		else -- duration countdown - by 1 (count mode) or calculate time from start (clock mode)
 			set countdown to (item ((clockMode as integer) + 1) of {countdown - 1, targetTime - (current date)})
@@ -618,17 +618,17 @@ to startStop:sender -- (re)set the timer and main menu properties - tags are use
 	if sender is not missing value then set itemTitle to (sender's title as text)
 	(statusMenu's itemWithTag:200)'s setTitle:"Pause" -- pause/continue
 	if itemTitle is "Start" then
-		set state to item (((clockMode or (timeSetting is "Set Alarm…")) as integer) + 1) of {true, false}
+		set state to item (((clockMode or (timeSetting is "Alarm Time…")) as integer) + 1) of {true, false}
 		(statusMenu's itemWithTitle:"Reset")'s setEnabled:state
 		(statusMenu's itemWithTag:100)'s setTitle:"Stop" -- start/stop
 		(statusMenu's itemWithTag:200)'s setEnabled:state -- pause/continue
-		statusItem's button's setToolTip:(item (((timeSetting is "Set Alarm…") as integer) + 1) of {"Countdown Remaining", "Time Until Alarm"})
+		statusItem's button's setToolTip:(item (((timeSetting is "Alarm Time…") as integer) + 1) of {"Countdown Remaining", "Time Until Alarm"})
 	else
 		if actionSound is not missing value then actionSound's |stop|()
 		(statusMenu's itemWithTitle:"Reset")'s setEnabled:false
 		(statusMenu's itemWithTag:100)'s setTitle:"Start" -- start/stop
 		(statusMenu's itemWithTag:200)'s setEnabled:false -- pause/continue
-		statusItem's button's setToolTip:(item (((timeSetting is "Set Alarm…") as integer) + 1) of {"Countdown Duration", "Alarm Time"})
+		statusItem's button's setToolTip:(item (((timeSetting is "Alarm Time…") as integer) + 1) of {"Countdown Duration", "Alarm Time"})
 	end if
 	repeat with mode in ((statusMenu's itemWithTitle:"Countdown Modes")'s submenu's itemArray) as list
 		if (mode's title) as text does not contain "Timer Window" then (mode's setEnabled:(itemTitle is not "Start"))
@@ -678,7 +678,7 @@ to getTime:sender -- get alarm or countdown time
 end getTime:
 
 on timePopover:sender -- handle buttons from the date picker popover
-	set buttonTitle to (sender's title) as text
+	set {buttonTitle, custom} to {(sender's title) as text, true}
 	if buttonTitle is not "Cancel" then
 		if buttonTitle is "Set" then
 			set theTime to (time of (((first item of getPopoverControls("NSDatePicker"))'s dateValue) as date))
@@ -689,6 +689,7 @@ on timePopover:sender -- handle buttons from the date picker popover
 			repeat with anItem in menuTimes
 				if theTime is anItem's itemSeconds then -- time equals one of the menu settings
 					(my setMenuTime:{title:(anItem's menuTitle)}) -- select the menu item instead (durationTime is updated)
+					set custom to false
 					exit repeat
 				end if
 			end repeat
@@ -696,7 +697,7 @@ on timePopover:sender -- handle buttons from the date picker popover
 				set my durationTime to theTime
 				set my durationHistory to my updateHistory(theTime, durationHistory)
 			end if
-			my resetTimeMenuState("Custom Duration…")
+			if custom then my resetTimeMenuState("Custom Duration…")
 		else if it is "Alarm Time" then
 			my setAlarmTime(theTime)
 		end if
@@ -764,13 +765,13 @@ to setAlarmTime(theSeconds as integer)
 		end if
 		set my alarmTime to theSeconds
 		set my alarmHistory to my updateHistory(theSeconds, alarmHistory)
-		resetTimeMenuState("Set Alarm…")
+		resetTimeMenuState("Alarm Time…")
 	end try
 end setAlarmTime
 
 to resetCountdown() -- reset the countdown to the current setting (does not stop any timer)
 	applyAttribute("NSBackgroundColor", null)
-	set {flashing, indx} to {false, ((timeSetting is "Set Alarm…") as integer) + 1}
+	set {flashing, indx} to {false, ((timeSetting is "Alarm Time…") as integer) + 1}
 	set countdown to item indx of {durationTime, alarmTime}
 	statusItem's button's setTitle:formatTime(countdown) -- plain text
 	windowLabelField's setStringValue:formatTime(countdown)
@@ -1014,7 +1015,7 @@ to makeTimerLabel() -- make and return a label text field in a view for the time
 		its setFrame:{{0, -14}, {378, 120}}
 		set my windowLabelField to it
 		its setFont:windowFont
-		its setToolTip:(item (((timeSetting is "Set Alarm…") as integer) + 1) of {"Countdown Duration", "Alarm Time"})
+		its setToolTip:(item (((timeSetting is "Alarm Time…") as integer) + 1) of {"Countdown Duration", "Alarm Time"})
 		its setDrawsBackground:true -- label is used for attributed string, but need to draw colorBackground
 		its setBackgroundColor:(backgroundColor of standardColors)
 	end tell
