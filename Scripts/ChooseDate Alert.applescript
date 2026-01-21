@@ -83,7 +83,7 @@ to addAccessorySubviews(alertWindow, labelString, initialDate) -- datePickers wi
 	alertWindow's setInitialFirstResponder:(calendar of datePickers) -- pre-select this datePicker
 	set graphical of datePickers to (makeDatePicker into {{x + width / 2 + 16, y + 26}, {width, height * 2}} given pickerType:"graphical", initialDate:initialDate) -- graphical clock face to upper right
 	alertWindow's contentView's addSubview:(graphical of datePickers)
-	set textual of datePickers to (makeDatePicker into {{x + width / 2 + 25, y}, {104, height / 2}} given pickerType:"textual", initialDate:initialDate) -- textual with stepper to lower right
+	set textual of datePickers to (makeDatePicker into {{x + width / 2 + 24, y}, {108, height / 2}} given pickerType:"textual", initialDate:initialDate) -- textual with stepper to lower right
 	alertWindow's contentView's addSubview:(textual of datePickers)
 end addAccessorySubviews
 
