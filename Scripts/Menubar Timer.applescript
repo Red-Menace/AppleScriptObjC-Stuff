@@ -3,7 +3,7 @@
 This script uses NSTimer to implement a repeating timer to count down seconds, and provides a formatted "hh:mm:ss" indication of time remaining in a NSStatusItem in the system menu bar, which includes a menu with items to adjust the duration or alarm time and an action to perform when the countdown expires.  Timer settings can be selected from preset menu items or set from NSDatePicker controls presented in popover dialogs (all settings and displays use a 24-hour format).  There are countdown mode settings for looping/repeating, a floating timer window, and for a countdown that can be paused or checks against the time it was started - note that NSTimer is not an exact real-time mechanism.
 
    • The status item title will show a countdown time with an icon and tooltip indicating if it is a duration or alarm time - the time setting will be shown when the timer is stopped, and will change to the time remaining when the timer is started.  The duration and alarm times both wrap at 24 hours, with the duration being from when the timer is started, while the alarm time will only match one time per day.
-   • When the countdown reaches 0, the status item title will flash and a sound (if set) will play.  The script will then proceed according to the action setting and mode - if "Loop" mode is set, the countdown will automatically restart, otherwise if a sound has been set the flash and sound will continue to be played until the timer is manually stopped or restarted, or if a script has been set it will be run (see below).  Loop mode is not saved, and is mutually exclusive of a "Run Script" action.
+   • When the countdown reaches 0, the status item title will flash and a sound (if set) will play.  The script will then proceed according to the action setting and mode - if "Loop" mode is set, the countdown will automatically restart, otherwise if a sound has been set the flash and sound will continue to be played until the timer is manually stopped or restarted, or if a script has been set it will be run (see below).  Loop mode is not saved, and is mutually exclusive of any "Run Script…" action.
 
    • An optional floating window provides the same information and menu as the status item, only with a larger countdown display.  Unlike the loop and count modes, it can be turned on and off while the countdown is running.  An application will save the last timer window location, but there is also an alternate menu item to reset the window location to its initial location under the status item menu.
 
@@ -18,7 +18,8 @@ This script uses NSTimer to implement a repeating timer to count down seconds, a
    • Preset sounds (menu item) can also be customized by placing the desired names in the list for the `actionMenuItems` property - sounds can be in any of the /Library/Sounds folders, but should have different names, otherwise user sounds will have precedence.  The default preset is a select set of names from the standard system sounds, which are available in all current versions of macOS.  Set the `actionSetting` property for the matching initial default as desired.
    • Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu - to avoid clashes with existing sounds that have the same name, the bundle names can contain invisible characters such as a zero width space (character id 8203, UTF-16 U+200B, or UTF-8 0xE2 0x80 0x8B).
    • An `allSounds` property is used to choose an alternative to using preset/bundle sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are sorted and grouped by system > local > user, with separator items and headers used between sections.  Duplicate names in a group (e.g. different extensions) will be removed.  Sound names that are already in system or local sound folders will also be removed, as user sounds will have precedence.
-   • Pausing on the menu item for a sound will play a sample.
+   • A "Custom Sound…" menu item is added to the end of the sounds list and will present a file panel to choose a custom sound/song file (it can be longer than an alert sound).  The selected sound will be loaded and the path saved as the default location for the file panel.  If the menu item is the current action setting when the application quits, the sound will be reloaded the next time the application is run.
+   • Pausing on the menu item for a sound (than than custom) will play a sample.
    • The Menubar Timer can also be metronome(ish) by setting the time to zero and using a short sound action (1 second or less for best results).
 
    • As an alternative to playing a sound, a user script can be run when the countdown reaches 0 - note that loop mode will be reset and the menu item disabled when a script is selected.  The script will be run using the `osascript` command after launching ScriptMonitor.app, which is a shared system application that shows a NSStatusItem with an animated gear icon in the menu bar, and is typically used for Script Menu items and Automator workflows.  Its entries contain a cancel button and may include progress (for example, completed workflow actions or if a script uses the built-in progress statements).
@@ -54,10 +55,10 @@ property |+| : current application -- just a shortcut (that it looks like a firs
 # The app bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
 property appName : "Menubar Timer" -- also used as the title for the timer window and the (disabled) first menu item
 property idPrefix : "com.your-company" -- com.apple.ScriptEditor.id (or whatever)
-property version : "3.19" -- macOS 13 Ventura or later for NSComboButton, updated for Tahoe
+property version : "3.20" -- macOS 13 Ventura or later for NSComboButton, updated for Tahoe
 
 -->> User Defaults (persistent app preferences)
-property actionSetting : "Basso" -- current action setting (from actionMenuItems list + "Off" and "Run Script…")
+property actionSetting : "Basso" -- current action setting (`actionMenuItems` + "Off", "Run Script…", and "Custom Sound…")
 property alarmHistory : {} -- previous 5 alarm time settings
 property alarmTime : 0 -- current target time-of-day (seconds)
 property allSounds : false -- load sounds from all libraries instead of app/preset
@@ -68,7 +69,8 @@ property durationHistory : {} -- previous 5 custom duration settings
 property durationTime : 3600 -- current countdown duration (seconds of the custom or selected duration)
 property intervalThreshold : 3600 -- threshold before using the colorInterval percentages
 property scriptPath : "" -- POSIX path to a user script
-property timeSetting : "1 Hour" -- current time setting (from timeMenuItems list + "Custom Duration…" and "Set Alarm…")
+property soundPath : "" -- POSIX path to a custom sound file
+property timeSetting : "1 Hour" -- current time setting (`timeMenuItems` + "Custom Duration…" and "Set Alarm…")
 
 -->> Option Settings
 property altActions : false -- experimental support for alternate actions -- see the `doAltAction` handler
@@ -102,7 +104,7 @@ property windowFont : missing value -- this will be the font used for the window
 property actionMenuItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Purr", "Sosumi", "Submarine"}
 property bundleSounds : {} -- this will be a list of instances for any sounds from the application bundle
 property intervalMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- color change percentages
-property soundExtensions : {"aac", "aiff", "m4a", "m4r", "mp3", "mp4", "wav"} -- acceptable sound file extensions
+property soundExtensions : {"aac", "aiff", "m4a", "m4r", "mp3", "wav"} -- acceptable sound file extensions for NSSound
 property soundTimeout : 0 -- seconds to discontinue alarm sound (0 to disable) - statusItem will still flash
 property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"}
 
@@ -168,7 +170,11 @@ to doAction() -- do something when the countdown expires (countdown will continu
 		end try
 	else
 		if actionSetting is not "Off" and actionSound is not missing value then
-			if (soundTimeout is 0) or ((soundTimeout + countdown) > 0) then actionSound's play() -- continue
+			if (soundTimeout is 0) or ((soundTimeout + countdown) > 0) then
+				actionSound's play() -- continue/repeat
+			else
+				actionSound's |stop|() -- in case of a longer (custom) sound
+			end if
 		end if
 		set countdown to countdown - 1 -- continue negative
 		setAttributedStrings(countdown) -- continue to update (flash) - display times stop at zero
@@ -203,7 +209,7 @@ end proceedWith:
 
 to readDefaults()
 	tell standardUserDefaults() of |+|'s NSUserDefaults
-		its registerDefaults:{Action_Setting:actionSetting, Alarm_History:alarmHistory, Alarm_Time:alarmTime, All_Sounds:allSounds, Clock_Mode:clockMode, Color_Background:colorBackground, Color_Intervals:colorIntervals, Duration_History:durationHistory, Duration_Time:durationTime, Interval_Threshold:intervalThreshold, Script_Path:scriptPath, Time_Setting:timeSetting}
+		its registerDefaults:{Action_Setting:actionSetting, Alarm_History:alarmHistory, Alarm_Time:alarmTime, All_Sounds:allSounds, Clock_Mode:clockMode, Color_Background:colorBackground, Color_Intervals:colorIntervals, Duration_History:durationHistory, Duration_Time:durationTime, Interval_Threshold:intervalThreshold, Script_Path:scriptPath, Sound_Path:soundPath, Sound_Timeout:soundTimeout, Time_Setting:timeSetting}
 		set my actionSetting to (its objectForKey:"Action_Setting") as text
 		set my alarmHistory to (its objectForKey:"Alarm_History") as list
 		set my alarmTime to (its integerForKey:"Alarm_Time") as integer
@@ -215,6 +221,8 @@ to readDefaults()
 		set my durationTime to (its integerForKey:"Duration_Time") as integer
 		set my intervalThreshold to (its integerForKey:"Interval_Threshold") as integer
 		set my scriptPath to (its objectForKey:"Script_Path") as text
+		set my soundPath to (its objectForKey:"Sound_Path") as text
+		set my soundTimeout to (its objectForKey:"Sound_Timeout") as integer
 		set my timeSetting to (its objectForKey:"Time_Setting") as text
 	end tell
 end readDefaults
@@ -233,6 +241,8 @@ to writeDefaults()
 		its setInteger:durationTime forKey:"Duration_Time"
 		its setInteger:intervalThreshold forKey:"Interval_Threshold"
 		its setObject:scriptPath forKey:"Script_Path" -- text
+		its setObject:soundPath forKey:"Sound_Path" -- text
+		its setObject:soundTimeout forKey:"Sound_Timeout"
 		its setObject:timeSetting forKey:"Time_Setting" -- text
 	end tell
 end writeDefaults
@@ -247,8 +257,9 @@ on quit
 			(obj's setReleasedWhenClosed:true)
 			obj's |close|()
 		end repeat
+		if actionSound is not missing value then actionSound's |stop|()
 		if timer is not missing value then timer's invalidate()
-		|+|'s NSStatusBar's systemStatusBar's removeStatusItem:statusItem -- only the current item
+		|+|'s NSStatusBar's systemStatusBar's removeStatusItem:statusItem -- only have reference to the current item
 	else
 		writeDefaults()
 	end if
@@ -269,7 +280,7 @@ end menuDidClose:
 on |menu|:theMenu willHighlightItem:theItem -- set up a sound sample to play when a menu item is highlighted
 	if theItem is missing value then return
 	if (theMenu's title) as text is not "Action" then return -- not the other menus
-	if ((theItem's title) as text) is in {"Off", "Run Script…"} then return -- not these, either
+	if ((theItem's title) as text) is in {"Off", "Run Script…", "Custom Sound…"} then return -- not these, either
 	tell soundSample
 		if its instance is not missing value then its instance's |stop|() -- stop any previous
 		if its timer is not missing value then its timer's invalidate() -- timer not fired yet
@@ -382,6 +393,19 @@ to addActionMenu(theMenu) -- submenu for the actions
 				if state then set my actionSound to (|+|'s NSSound's soundNamed:aName)
 			end if
 		end repeat
+		my (addMenuItem to it) ----
+		set state to (actionSetting is "Custom Sound…")
+		if state then try -- load custom sound
+			set my actionSound to current application's NSSound's alloc()'s initWithContentsOfFile:soundPath byReference:false
+			if actionSound is missing value then error "No sound"
+		on error -- no file, etc
+			set my soundPath to ""
+			set theName to first item of actionMenuItems
+			(its itemWithTitle:theName)'s setState:true -- reset to default
+			set my actionSound to (|+|'s NSSound's soundNamed:theName)
+			set state to false
+		end try
+		my (addMenuItem to it given title:"Custom Sound…", action:"setAlarm:", state:state)
 	end tell
 	(theMenu's addItemWithTitle:"Action" action:(missing value) keyEquivalent:"")'s setSubmenu:actionMenu
 end addActionMenu
@@ -610,15 +634,31 @@ to setMenuTime:sender -- update the time menu selection
 end setMenuTime:
 
 to setAlarm:sender -- update the action selection
-	tell (sender's title as text) to if it is "Run Script…" then -- get action script
+	set menuItem to (sender's title as text)
+	if menuItem is "Run Script…" then -- get action script
 		if not my buildScriptControls() then return -- no scripts
 		my showPopover()
 		return -- menu state updated by popover
-	else if it is not "Off" then -- set up sound
-		set my actionSound to (|+|'s NSSound's soundNamed:it) -- NSSound is asynchronous
+	end if
+	if menuItem is "Custom Sound…" then -- get user selected sound
+		try
+			set locationPath to (item (((soundPath is "") as integer) + 1) of {soundPath, POSIX path of (path to home folder)})
+			set chosenPath to POSIX path of (choose file with prompt "Choose a file to use for the action sound:" of type soundExtensions default location locationPath)
+			set my actionSound to current application's NSSound's alloc()'s initWithContentsOfFile:chosenPath byReference:false
+			if actionSound is missing value then error "No sound"
+			set my soundPath to chosenPath
+		on error errmess number errnum -- no file, etc
+			if errnum is -128 then return -- cancel
+			set my soundPath to "" -- clear custom
+			set menuItem to first item of actionMenuItems -- default
+			set my actionSound to (|+|'s NSSound's soundNamed:menuItem) -- reset
+			actionSound's play() -- sample
+		end try
+	else if menuItem is not "Off" then -- set up menu sound
+		set my actionSound to (|+|'s NSSound's soundNamed:menuItem) -- NSSound is asynchronous
 		actionSound's play() -- sample
 	end if
-	resetActionMenuState(sender's title as text)
+	resetActionMenuState(menuItem)
 end setAlarm:
 
 to startStop:sender -- (re)set the timer and main menu properties - tags are used for dynamic titles
@@ -846,7 +886,7 @@ to getUserScripts() -- get user scripts - returns the current name and a diction
 	set dictionary to |+|'s NSMutableDictionary's alloc()'s init() -- dictionary of name:posixPath
 	set current to missing value
 	repeat with anItem in (getFolderContents from userScriptsFolder given resourceKeys:{"NSURLContentTypeKey"})
-		set {theResult, value} to (anItem's getResourceValue:(reference) forKey:"NSURLContentTypeKey" |error|:(missing value)) -- (NSURLTypeIdentifierKey is deprecated in Big Sur)
+		set {theResult, value} to (anItem's getResourceValue:(reference) forKey:"NSURLContentTypeKey" |error|:(missing value)) -- NSURLTypeIdentifierKey is deprecated in Big Sur
 		if theResult and ((value's conformsToType:scriptType) as boolean) then -- only compiled scripts
 			set {theName, thePath} to {(anItem's lastPathComponent's stringByDeletingPathExtension) as text, (anItem's |path| as text)}
 			if thePath is scriptPath then set current to theName -- name of current script setting
@@ -862,7 +902,7 @@ to getUserScripts() -- get user scripts - returns the current name and a diction
 	return {current, dictionary}
 end getUserScripts
 
-to getAllSounds() -- get sound names from sound libraries (NSSearchPathDomainMask of 11)
+to getAllSounds() -- get sound names from system, local, and user sound libraries (NSSearchPathDomainMask of 11)
 	tell |+|'s NSMutableArray to set {soundList, subList} to {its alloc()'s init(), its alloc()'s init()}
 	repeat with libraryPath in reverse of (((|+|'s NSSearchPathForDirectoriesInDomains(|+|'s NSLibraryDirectory, 11, true))'s objectEnumerator())'s allObjects as list) -- /System/Library, /Library, /Users/<user>/Library
 		repeat with anItem in (getFolderContents from libraryPath given subfolder:"Sounds")
@@ -1039,7 +1079,7 @@ end makeTimerLabel
 -->> General-purpose Handlers
 ##############################
 
-# Add a menuItem to a menu - `sectionHeaderWithTitle` convenience method is for macOS 14+, so an attributedString is used.
+# Add a menuItem to a menu - the `sectionHeaderWithTitle` convenience method is for 14+, so an attributedString is used.
 to addMenuItem to theMenu given title:(title as text) : "", header:(header as boolean) : false, alternate:(alternate as boolean) : false, action:(action as text) : "", theKey:(theKey as text) : "", tag:(tag as integer) : 0, enabled:(enabled as boolean) : true, state:(state as integer) : 0 -- given parameters are optional
 	if title is "" then return theMenu's addItem:(|+|'s NSMenuItem's separatorItem)
 	if header then tell (theMenu's addItemWithTitle:"" action:(missing value) keyEquivalent:"")
@@ -1062,7 +1102,7 @@ to addMenuItem to theMenu given title:(title as text) : "", header:(header as bo
 	end tell
 end addMenuItem
 
-# Get the contents of a folder - `options` 7 is no hidden items, package contents, or subfolders.
+# Get the contents of a folder - NSDirectoryEnumerationOptions of 7 is no hidden items, package contents, or subfolders.
 to getFolderContents from (posixPath as text) given subfolder:subfolder as text : "", resourceKeys:resourceKeys as list : {}, options:options as integer : 7 -- given parameters are optional
 	if posixPath begins with "/System/Cryptexes" then return {} -- skip cryptographically sealed extensions
 	return ((|+|'s NSFileManager's defaultManager)'s enumeratorAtURL:(|+|'s NSURL's fileURLWithPath:((|+|'s NSString's stringWithString:posixPath)'s stringByAppendingPathComponent:subfolder)) includingPropertiesForKeys:resourceKeys options:options errorHandler:(missing value))'s allObjects()
@@ -1093,10 +1133,11 @@ end formatFloat
 
 # Filter a bundle ID candidate to only lower case and allowed characters.
 to filterID(candidate as text)
-	set {theResult, charList} to {"", characters of "-.etaoinshrdlucmfwgypbvkxjqz0123456789"} -- letters in frequency order
+	set {theResult, charList} to {"", characters of "-.etaoinshrdlucmfwgypbvkxjqz0123456789"} -- frequency order
+	set charListCount to (count charList)
 	repeat with aChar in (get characters of candidate)
 		set output to "-" -- substitution character
-		tell (contents of aChar) to if it is in charList then repeat with indx from 1 to 38 -- (count charList)
+		tell (contents of aChar) to if it is in charList then repeat with indx from 1 to charListCount
 			set match to contents of (item indx of charList)
 			if it is match then -- ignores case
 				set output to match
