@@ -15,12 +15,12 @@ This script uses NSTimer to implement a repeating timer to count down seconds, a
    • A custom duration setting that has the same value as one of the time menu items will select that menu item instead.
    • If you are running macOS 13.0 Ventura or later, the previous 5 alarm times and custom durations are available in a NSComboButton in the respective popover.  New and reused settings are placed at the top of the list before trimming.
 
-   • Preset sounds (menu item) can also be customized by placing the desired names in the list for the `actionMenuItems` property - sounds can be in any of the /Library/Sounds folders, but should have different names, otherwise user sounds will have precedence.  The default preset is a select set of names from the standard system sounds, which are available in all current versions of macOS.  Set the `actionSetting` property for the matching initial default as desired.
-   • Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will also be added to the action menu - to avoid clashes with existing sounds that have the same name, the bundle names can contain invisible characters such as a zero width space (character id 8203, UTF-16 U+200B, or UTF-8 0xE2 0x80 0x8B).
+   • Preset sounds (menu item) can also be customized by placing the desired names in the list for the `baseActionItems` property, which is copied and added to from the settings or application bundle to create the list of `actionMenuItems`. Sounds can be in any of the /Library/Sounds folders, but should have different names, otherwise user sounds will have precedence.  The base preset is a select set of names from the standard system sounds, which are available in all current versions of macOS.  Set the `actionSetting` property for the matching initial default as desired.
+   • Any sounds included in a script application's bundle in the /Contents/Resources/Sounds folder will be added to the action menu - to avoid clashes with existing sounds that have the same name, the bundle names can contain invisible characters such as a zero width space (character id 8203, UTF-16 U+200B, or UTF-8 0xE2 0x80 0x8B).
    • An `allSounds` property is used to choose an alternative to using preset/bundle sounds.  When true, sound names (minus extension) will be gathered from the base of all of the /Library/Sounds folders.  These names are sorted and grouped by system > local > user, with separator items and headers used between sections.  Duplicate names in a group (e.g. different extensions) will be removed.  Sound names that are already in system or local sound folders will also be removed, as user sounds will have precedence.
-   • A "Custom Sound…" menu item is added to the end of the list of sounds and will present a file panel for a sound/song file of your choice (it can be longer than an alert sound).  The selected path will be saved as the default item for the file panel and the sound will be reloaded the next time the application is run.
-   • Pausing on the menu item for a sound will play it while the item is highlighted (or the sound finishes).  The sound will also play a sample as confirmation when it is selected as the action.
-   • The Menubar Timer can also be metronome(ish) by setting the time to zero and using a short sound action (1 second or less for best results).
+   • A "Custom Sound…" menu item is added to the end of the list of sounds and will present a file panel for a sound/song file of your choice (it can be longer than an alert sound).  The selected path will be saved as the default item for the file panel and reloaded the next time the application is run.
+   • Pausing on the menu item for a sound will play it while the item is highlighted (or the sound finishes).  A sample sound will also play as a confirmation when it is selected as the action.
+   • The Menubar Timer can be metronome(ish) by setting the time to zero and using a short sound action (1 second or less for best results).
 
    • As an alternative to playing a sound, a user script can be run when the countdown reaches 0 - note that loop mode will be reset and the menu item disabled when a script is selected.  The script will be run using the `osascript` command after launching ScriptMonitor.app, which is a shared system application that shows a NSStatusItem with an animated gear icon in the menu bar, and is typically used for Script Menu items and Automator workflows.  Its entries contain a cancel button and may include progress (for example, completed workflow actions or if a script uses the built-in progress statements).
    • Although the application is not sandboxed (and AppleScriptObjC can't use NSUserAppleScriptTask's completion handler anyway), it still requires the scripts to be placed in the user's ~/Library/Application Scripts/<bundle-identifier> folder.  The app/script will create this folder as needed, which can also be revealed from the script setting popover.
@@ -55,10 +55,10 @@ property |+| : current application -- just a shortcut (that it looks like a firs
 # The app bundle identifier must be unique for multiple instances, and should use the reverse-dns form idPrefix.appName
 property appName : "Menubar Timer" -- also used as the title for the timer window and the (disabled) first menu item
 property idPrefix : "com.your-company" -- com.apple.ScriptEditor.id (or whatever)
-property version : "3.21" -- macOS 13 Ventura or later for NSComboButton, updated for Tahoe
+property version : "3.22" -- macOS 13 Ventura or later for NSComboButton, updated for Tahoe
 
 -->> User Defaults (persistent app preferences)
-property actionSetting : "Basso" -- current action setting (`actionMenuItems` + "Off", "Run Script…", and "Custom Sound…")
+property actionSetting : "Basso" -- initial action setting
 property alarmHistory : {} -- previous 5 alarm time settings
 property alarmTime : 0 -- current target time-of-day (seconds)
 property allSounds : false -- load sounds from all libraries instead of app/preset
@@ -70,7 +70,7 @@ property durationTime : 3600 -- current countdown duration (seconds of the custo
 property intervalThreshold : 3600 -- threshold before using the colorInterval percentages
 property scriptPath : "" -- POSIX path to a user script
 property soundPath : "" -- POSIX path to a custom sound file
-property timeSetting : "1 Hour" -- current time setting (`timeMenuItems` + "Custom Duration…" and "Set Alarm…")
+property timeSetting : "1 Hour" -- initial time setting
 
 -->> Option Settings
 property altActions : false -- experimental support for alternate actions -- see the `doAltAction` handler
@@ -101,14 +101,15 @@ property windowLabelField : missing value -- this will be a label text field in 
 property windowFont : missing value -- this will be the font used for the window textField
 
 -->> Preset Values
-property actionMenuItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Purr", "Sosumi", "Submarine"}
-property bundleSounds : {} -- this will be a list of instances for any sounds from the application bundle
+property baseActionItems : {"Basso", "Blow", "Funk", "Glass", "Hero", "Morse", "Ping", "Purr", "Sosumi", "Submarine"}
 property intervalMenuItems : {{0.35, 0.1}, {0.5, 0.2}, {0.5, 0.166}, {0.25, 0.016}, {1.0, 0.25}} -- color change percentages
 property soundExtensions : {"aac", "aiff", "m4a", "m4r", "mp3", "wav"} -- acceptable sound file extensions for NSSound
 property soundTimeout : 0 -- seconds to discontinue alarm sound (0 to disable) - statusItem will still flash
 property timeMenuItems : {"10 Minutes", "30 Minutes", "1 Hour", "2 Hours", "4 Hours"}
 
 -->> Globals
+global actionMenuItems -- a list of actions built from the base items, menu build, application bundle, and settings
+global bundleSounds -- instances for added sounds from the application bundle
 global countdown -- the current countdown time (seconds)
 global flashing -- a flag to flash the statusItem button title
 global looping -- a flag indicating loop mode
@@ -139,8 +140,9 @@ end run
 to initialize()
 	set usingEditor to (name of |+|) is in {"Script Editor", "Script Debugger"}
 	if not usingEditor then readDefaults() -- no preferences if running in a script editor
-	set userSound to missing value
-	getSounds()
+	set {userSound, bundleSounds} to {missing value, {}}
+	copy baseActionItems to actionMenuItems
+	getSounds() -- add to initial actionmenuItems
 	set soundSample to {instance:(missing value), timer:(missing value)} -- sample template
 	set {pausing, flashing} to {true, false}
 	set {countdown, menuTimes} to {durationTime, {}}
@@ -160,9 +162,13 @@ to initialize()
 	setupPopoverStuff()
 	makeTimerWindow()
 	resetCountdown()
-	if soundPath is not "" then -- load custom sound
+	if soundPath is not "" then -- reload custom sound
 		set userSound to current application's NSSound's alloc()'s initWithContentsOfFile:soundPath byReference:false
-		if userSound is missing value then resetActionMenuState(getUserSound(missing value)) -- reset to default
+		if actionSetting is "Custom Sound…" then if userSound is missing value then
+			resetActionMenuState(getUserSound(missing value)) -- reset to default
+		else
+			set actionSound to userSound
+		end if
 	end if
 end initialize
 
@@ -294,9 +300,9 @@ on |menu|:theMenu willHighlightItem:theItem -- set up a sound sample to play whe
 		if (theItem's title) as text is "Custom Sound…" then
 			set its instance to userSound -- `soundNamed` is cached so it isn't used here
 		else
-			set its instance to |+|'s NSSound's soundNamed:(theItem's title) -- set up a new sample
+			set its instance to |+|'s NSSound's soundNamed:(theItem's title) -- sample of the menu item sound
 		end if
-		set its timer to |+|'s NSTimer's timerWithTimeInterval:0.5 target:me selector:"oneshotSample:" userInfo:(missing value) repeats:false -- set up a new one-shot timer to play sample
+		set its timer to |+|'s NSTimer's timerWithTimeInterval:0.5 target:me selector:"oneshotSample:" userInfo:(missing value) repeats:false -- set up a new one-shot timer to play the sample
 		|+|'s NSRunLoop's mainRunLoop's addTimer:(its timer) forMode:(|+|'s NSEventTrackingRunLoopMode)
 	end tell
 end |menu|:willHighlightItem:
@@ -893,51 +899,28 @@ end getUserScripts
 
 to getUserSound(menuItem) -- get user specified sound
 	try
-		if menuItem is missing value then error "missing sound file" -- reset
+		if menuItem is missing value then error "resetting missing userSound"
 		tell soundSample to if its instance is not missing value then its instance's |stop|()
 		set locationPath to (item (((soundPath is "") as integer) + 1) of {soundPath, POSIX path of (path to home folder)})
 		activate me
 		set chosenPath to POSIX path of (choose file with prompt "Choose a file to use for the action sound:" of type soundExtensions default location locationPath)
-		if chosenPath is not soundPath then
-			set my actionSound to current application's NSSound's alloc()'s initWithContentsOfFile:chosenPath byReference:false
-			if actionSound is missing value then error "No sound"
+		if (chosenPath is not soundPath) or (userSound is missing value) then
+			set userSound to current application's NSSound's alloc()'s initWithContentsOfFile:chosenPath byReference:false
+			if userSound is missing value then error "sound not loaded"
 			set my soundPath to chosenPath
-			set userSound to actionSound
 		end if
+		set my actionSound to userSound
 		userSound's play()
-		userSound's performSelector:"stop" withObject:(missing value) afterDelay:5.0 -- limit sample
+		userSound's performSelector:"stop" withObject:(missing value) afterDelay:4.0 -- limit sample
 	on error errmess number errnum -- no file, etc
 		if errnum is -128 then return missing value -- no change if cancel
 		set my soundPath to ""
-		set menuItem to first item of actionMenuItems -- reset to default
+		set menuItem to first item of baseActionItems -- reset to default
 		set my actionSound to (|+|'s NSSound's soundNamed:menuItem)
 		actionSound's play()
 	end try
 	return menuItem
 end getUserSound
-
-to getAllSounds() -- get sound names from system, local, and user sound libraries (NSSearchPathDomainMask of 11)
-	tell |+|'s NSMutableArray to set {soundList, subList} to {its alloc()'s init(), its alloc()'s init()}
-	repeat with libraryPath in reverse of (((|+|'s NSSearchPathForDirectoriesInDomains(|+|'s NSLibraryDirectory, 11, true))'s objectEnumerator())'s allObjects as list) -- /System/Library, /Library, /Users/<user>/Library
-		repeat with anItem in (getFolderContents from libraryPath given subfolder:"Sounds")
-			tell anItem's |path| to if ((its pathExtension) as text) is in soundExtensions then
-				set candidate to (its lastPathComponent's stringByDeletingPathExtension) as text
-				if not (subList's containsObject:candidate) then (subList's addObject:candidate) -- skip duplicate names
-			end if
-		end repeat
-		(subList's removeObjectsInArray:soundList) -- remove sounds already in the main list (from previous directories)
-		if (subList's |count|()) as integer is not 0 then
-			(subList's setArray:(subList's sortedArrayUsingSelector:"caseInsensitiveCompare:"))
-			set source to (first word of libraryPath)
-			if source ends with "s" then set source to text 1 thru -2 of source -- "User"
-			if source is "Library" then set source to "Local"
-			(subList's insertObject:(source & " Sounds") atIndex:0) -- section header - see `addActionMenu`
-			(soundList's addObjectsFromArray:subList)
-			subList's removeAllObjects()
-		end if
-	end repeat
-	set my actionMenuItems to soundList as list
-end getAllSounds
 
 to getSounds() -- add from the app bundle (if present) or from all sound libraries if option is set
 	if allSounds then return getAllSounds() -- override preset
@@ -959,6 +942,29 @@ to getSounds() -- add from the app bundle (if present) or from all sound librari
 		set actionMenuItems to actionMenuItems & (soundList as list)
 	end if
 end getSounds
+
+to getAllSounds() -- add sound names from system, local, and user sound libraries (NSSearchPathDomainMask of 11)
+	tell |+|'s NSMutableArray to set {soundList, subList} to {its alloc()'s init(), its alloc()'s init()}
+	repeat with libraryPath in reverse of (((|+|'s NSSearchPathForDirectoriesInDomains(|+|'s NSLibraryDirectory, 11, true))'s objectEnumerator())'s allObjects as list) -- /System/Library, /Library, /Users/<user>/Library
+		repeat with anItem in (getFolderContents from libraryPath given subfolder:"Sounds")
+			tell anItem's |path| to if ((its pathExtension) as text) is in soundExtensions then
+				set candidate to (its lastPathComponent's stringByDeletingPathExtension) as text
+				if not (subList's containsObject:candidate) then (subList's addObject:candidate) -- skip duplicate names
+			end if
+		end repeat
+		(subList's removeObjectsInArray:soundList) -- remove sounds already in the main list (from previous directories)
+		if (subList's |count|()) as integer is not 0 then
+			(subList's setArray:(subList's sortedArrayUsingSelector:"caseInsensitiveCompare:"))
+			set source to (first word of libraryPath)
+			if source ends with "s" then set source to text 1 thru -2 of source -- "User"
+			if source is "Library" then set source to "Local"
+			(subList's insertObject:(source & " Sounds") atIndex:0) -- section header - see `addActionMenu`
+			(soundList's addObjectsFromArray:subList)
+			subList's removeAllObjects()
+		end if
+	end repeat
+	set actionMenuItems to soundList as list
+end getAllSounds
 
 
 ##############################
