@@ -36,3 +36,5 @@ These are also examples using AppleScriptObjC, but use other Cocoa classes that 
 * Text from Image - text detection using the Vision framework.
     * NSPasteboard, NSImage, VNImageRequestHandler, VNRecognizeTextRequest
 
+* AutoCodeWrapper - wraps a Script Editor / Script Debugger selection or clipboard text with a code insertion script - a NSAlert with an accessory view is used to adjust default options.  Although this script can be run from an editor, it is designed to be used with the Script Menu.
+	* NSAlert, NSApplication, NSImage, NSBox, NSButton, NSTextField, NSColor
