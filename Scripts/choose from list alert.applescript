@@ -151,7 +151,7 @@ to makeDataSource for tableItems
 	tell current application's NSMutableArray's alloc()'s init()
 		repeat with anItem in tableItems -- build an array of dictionaries for the rows
 			set dict to current application's NSMutableDictionary's alloc's init()
-			(dict's setObject:(my (makeAttributedString for anItem)) forKey:columnKey)
+			(dict's setObject:(my (makeAttributedString for anItem given textFont:(current application's NSFont's fontWithName:"Futura Medium Italic" |size|:12))) forKey:columnKey)
 			(its addObject:dict)
 		end repeat
 		set my dataSource to it
