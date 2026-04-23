@@ -33,12 +33,12 @@ end doStuff
 
 
 on makeButton(title, x, y) -- make a button at the {x, y} position
-	tell (NSButton's alloc's initWithFrame:{{x, y}, {70, 24}})
+	tell (NSButton's alloc's initWithFrame:{{x, y}, {60, 24}})
 		its setButtonType:(current application's NSMomentaryChangeButton)
 		its setBezelStyle:(current application's NSRoundRectBezelStyle)
 		its setRefusesFirstResponder:true -- no highlight
 		its setTitle:title
-		its sizeToFit()
+		if (count title) > 7 then its sizeToFit()
 		its setAlternateTitle:"Pressed"
 		its setTarget:me
 		its setAction:"buttonAction:"
