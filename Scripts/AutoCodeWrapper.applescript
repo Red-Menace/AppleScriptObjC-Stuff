@@ -1,7 +1,7 @@
 
 (*
 	Auto Code Wrapper (combined) - wraps a Script Editor / Script Debugger selection or clipboard text with a code insertion script
-	last reviewed April 22, 2026
+	last reviewed April 23, 2026
 	   Input:   source text read from the targeted editor selection or the clipboard
 	   Output:  script text pasted into a new targeted editor document or saved to a file
 		
@@ -97,12 +97,12 @@ on doStuff() -- get the source text and wrap it
 		end if
 	else -- clipboard first
 		if ((clipboard info) as text) contains "«class utf8»" then set sourceText to (the clipboard) as text
-		if sourceText is "" then
+		if sourceText is "" and (openDocuments is not {}) then
 			set sourceText to (run script "tell application \"" & editor & "\" to tell document 1 to return contents of selection")
 		end if
 	end if
 	if (trimWhitespace from sourceText) is "" then
-		my performSelectorOnMainThread:"showAlert:" withObject:{messageText:"AutoCodeWrapper Input Error", infoText:"Neither the current editor selection nor the clipboard appear to contain script text."} waitUntilDone:true
+		my performSelectorOnMainThread:"showAlert:" withObject:{messageText:"AutoCodeWrapper Input Error", infoText:"There is no script editor selection or document and the clipboard does not contain text.  Please copy or select script text to wrap."} waitUntilDone:true
 		return
 	end if
 	makeWrapper(sourceText)
@@ -223,7 +223,7 @@ to outputWrapper(theCode, documentName) -- save the wrapper script or open it in
 			tell application editor to activate
 			if editor is "Script Debugger" then -- document is given the default name
 				try -- workaround for early return bug
-					run script "tell application \"Script Debugger\" to (make new document with properties {source text:\"" & theCode & "\", name:\"" & documentName & "\"})" -- escape the escaped code for a string
+					run script "tell application \"Script Debugger\" to (make new document with properties {source text:\"" & theCode & "\", name:\"" & documentName & "\"})"
 				on error number -1712 -- only trapping this one, any others are captured later
 					log "Error -1712: 'AppleEvent timed out.' - new document has been created, error ignored…"
 				end try
