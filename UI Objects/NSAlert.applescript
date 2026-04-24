@@ -3,6 +3,7 @@
 #	NSAlert dialogs - plain and enhanced with support for fonts, countdown timer, and an accessory view.
 #	Tested with older systems as far back as 10.12 Sierra, which use the original horizontal orientation.
 #	Examples follow the handler and script object, which can also be used as a script library.
+#	Updated for Tahoe.
 #
 
 
@@ -66,7 +67,8 @@ script AlertController
 	to performAlert for messageText as text : "" given messageFont:messageFont : missing value, messageColor:messageColor : missing value, infoText:infoText as text : "", infoFont:infoFont : missing value, infoColor:infoColor : missing value, buttons:buttons as list : {"OK"}, icon:icon as text : "", accessory:accessory : missing value, givingUpAfter:givingUpAfter as integer : 0
 		set my alert to current application's NSAlert's alloc()'s init()
 		alert's |window|'s setAutorecalculatesKeyViewLoop:true -- hook any added views into the key-view loop
-		alert's setMessageText:adjustFonts(messageText, {messageFont, messageColor, infoFont, infoColor})
+		set messageText to adjustFonts(messageText, {messageFont, messageColor, infoFont, infoColor})
+		alert's setMessageText:messageText
 		if infoText is not "" then alert's setInformativeText:infoText
 		setButtons(buttons)
 		if icon is not "" then setIcon(icon)
@@ -128,8 +130,9 @@ script AlertController
 	
 	# Adjust the message and informative text field font and colors.
 	to adjustFonts(messageText as text, fontInfo)
+		set {message, info} to item ((((get system attribute "sys1") ≥ 26) as integer) + 1) of {{5, 6}, {2, 3}} -- Tahoe+?
 		set {messageFont, messageColor, infoFont, infoColor} to fontInfo
-		tell alert's |window|'s contentView's subviews's item 5
+		tell item message of alert's |window|'s contentView's subviews
 			if messageText is "" then -- space always used in earlier systems, so just make it small
 				its setFont:(current application's NSFont's systemFontOfSize:0.1)
 			else
@@ -137,7 +140,7 @@ script AlertController
 				if messageColor is not missing value then its setTextColor:messageColor -- NSColor
 			end if
 		end tell
-		tell alert's |window|'s contentView's subviews's item 6
+		tell item info of alert's |window|'s contentView's subviews
 			if infoFont is not missing value then its setFont:infoFont -- NSFont
 			if infoColor is not missing value then its setTextColor:infoColor -- NSColor
 		end tell
