@@ -1,28 +1,28 @@
 
 (*
-	Auto Code Wrapper (combined) - wraps a Script Editor / Script Debugger selection or clipboard text with a code insertion script
-	last reviewed April 23, 2026
-	   Input:   source text read from the targeted editor selection or the clipboard
-	   Output:  script text pasted into a new targeted editor document or saved to a file
-		
-	This script and its generated wrapper scripts are designed to be run from the Script Menu as an alternative to using a code snippet manager.  The Script Menu has its own application and uses `osascript` to run scripts separate from the editors, which allows the current editor document to be edited.  This also avoids issues such as a wrapper script targeting the wrong editor or the editor not running. Compiled wrapper scripts can be added to the Script Menu by placing them in your user's ~/Library/Scripts/Applications/Script Editor (or Script Debugger) folder, where they will be listed in the menu when that editor is active.
-	
-	NOTE: 
-	The script is distributed as text so that it can be saved as a compiled .scpt after making any desired changes to the script settings (`targetEditor`, `savePath`, etc) and default options (`authorInfo`, `autoSave`, n`amePrefix`, etc).  Script Editor and Script Debugger use slightly different terminology, so it is important to set the `targetEditor` property for the desired script editor.  The script uses `run script` and `osacompile` in order to avoid a choose dialog and/or error if Script Debugger is not installed - generated wrapper scripts will only target the specified editor.
-		
-	When running this script in the editor (testing, etc), the target editor is temporarily set to the current application and the save destination is set to the Desktop folder.  The ~/Library/Scripts folder for the current application is also created if it does not already exist.  Any generated wrapper scripts will still need to be used from an AppleScript instance separate from the editor, e.g. Script Menu, `osascript`, etc.
-	
-	When running this script from the Script Menu, it gets a code snippet/handler from the current editor selection or the clipboard (the `selectionFirst` property determines which is looked for first) and wraps it with an insertion script.  A handler wrapper is determined at script creation if, after skipping leading comment/empty lines and whitespace, the input text begins with "on " or "to " and the `includeHandlerCall` property is true, otherwise a code snippet wrapper is used.
-	The script doesn't check that the inserted text will compile in the targeted script or if it contains things such as multiple handlers, so that incomplete snippets or a group of handlers such as a main/helper or utility handlers can be inserted and edited as appropriate.  The option to compile after code insertion can be set as desired for each wrapper script.
-	Wrapper code is minimal, adding 24 lines for a handler and 13 for a snippet (including comments and blank lines).
-	
-	When a wrapper script is run from the Script Menu, it will insert its handler/snippet code into the editor's front document at the current insertion point or selection.  If the `includeHandlerCall` property is false, a handler wrapper operates as a general-purpose code snippet wrapper (except for the auto-save name - see below), otherwise a handler wrapper will perform as follows:
-			• Comments and extra whitespace are removed from the handler call statement, and a newline will be added to the end of the handler code if doesn't already end with one.
-			• The handler code will be inserted if there are two or more preceding blank lines (at least 3 newline characters), otherwise a handler call statement is inserted as a template for any arguments.  The handler call statement normally uses the first line/paragraph of the handler definition (minus the `on/to`), but line continuations are also supported.  Note that the handler call statement contains the entire handler name declaration and may not compile until arguments have been edited (e.g. labeled parameters with defaults).
-		
-	The default name of a generated script will begin with the `namePrefix` property followed by the first word of the handler name (piped or underscored identifiers are treated as one word) or a random(ish) snippet name in the form of `snippet-41B78F6578E2`.  If not auto-saving, a new editor document will be opened in Script Debugger and given the name, but new documents in Script Editor will not be renamed since a backing file is required.  The default `savePath` is the appropriate ~/Library/Scripts/Applications/ folder and can be POSIX, the Desktop will be used if it is not set ("" or missing value).  The new document will be compiled according to the `compileNewDocuments` property setting.
+   Auto Code Wrapper (combined) - wraps a Script Editor / Script Debugger selection or clipboard text with a code insertion script
+   last reviewed April 23, 2026
+      Input:   source text read from the targeted editor selection or the clipboard
+      Output:  script text pasted into a new targeted editor document or saved to a file
 
-	Other than AppleScript's historical practice of saving properties and globals in the script file, regular scripts don't really have a preferences system.  This script prevents properties from being modified by copying their values into global values - there is an initial alert dialog to let you adjust a few of these values such as the auto-save and selection options so that you don't have to recompile the defaults in the script if you want to occasionally do something slightly different.  The default options are those that have been set in the script properties - any adjustments from the alert will only be applied to the current run and are not kept.
+   This script and its generated wrapper scripts are designed to be run from the Script Menu as an alternative to using a code snippet manager.  The Script Menu has its own application and uses `osascript` to run scripts separate from the editors, which allows the current editor document to be edited.  This also avoids issues such as a wrapper script targeting the wrong editor or the editor not running. Compiled wrapper scripts can be added to the Script Menu by placing them in your user's ~/Library/Scripts/Applications/Script Editor (or Script Debugger) folder, where they will be listed in the menu when that editor is active.
+
+   NOTE: 
+   The script is distributed as text so that it can be saved as a compiled .scpt after making any desired changes to the script settings (`targetEditor`, `savePath`, etc) and default options (`authorInfo`, `autoSave`, n`amePrefix`, etc).  Script Editor and Script Debugger use slightly different terminology, so it is important to set the `targetEditor` property for the desired script editor.  The script uses `run script` and `osacompile` in order to avoid a choose dialog and/or error if Script Debugger is not installed - generated wrapper scripts will only target the specified editor.
+
+   When running this script in the editor (testing, etc), the target editor is temporarily set to the current application and the save destination is set to the Desktop folder.  The ~/Library/Scripts folder for the current application is also created if it does not already exist.  Any generated wrapper scripts will still need to be used from an AppleScript instance separate from the editor, e.g. Script Menu, `osascript`, etc.
+
+   When running this script from the Script Menu, it gets a code snippet/handler from the current editor selection or the clipboard (the `selectionFirst` property determines which is looked for first) and wraps it with an insertion script.  A handler wrapper is determined at script creation if, after skipping leading comment/empty lines and whitespace, the input text begins with "on " or "to " and the `includeHandlerCall` property is true, otherwise a code snippet wrapper is used.
+   The script doesn't check that the inserted text will compile in the targeted script or if it contains things such as multiple handlers, so that incomplete snippets or a group of handlers such as a main/helper or utility handlers can be inserted and edited as appropriate.  The option to compile after code insertion can be set as desired for each wrapper script.
+   Wrapper code is minimal, adding 24 lines for a handler and 13 for a snippet (including comments and blank lines).
+
+   When a wrapper script is run from the Script Menu, it will insert its handler/snippet code into the editor's front document at the current insertion point or selection.  If the `includeHandlerCall` property is false, a handler wrapper operates as a general-purpose code snippet wrapper (except for the auto-save name - see below), otherwise a handler wrapper will perform as follows:
+         • Comments and extra whitespace are removed from the handler call statement, and a newline will be added to the end of the handler code if doesn't already end with one.
+         • The handler code will be inserted if there are two or more preceding blank lines (at least 3 newline characters), otherwise a handler call statement is inserted as a template for any arguments.  The handler call statement normally uses the first line/paragraph of the handler definition (minus the `on/to`), but line continuations are also supported.  Note that the handler call statement contains the entire handler name declaration and may not compile until arguments have been edited (e.g. labeled parameters with defaults).
+
+   The default name of a generated script will begin with the `namePrefix` property followed by the first word of the handler name (piped or underscored identifiers are treated as one word) or a random(ish) snippet name in the form of `snippet-41B78F6578E2`.  If not auto-saving, a new editor document will be opened in Script Debugger and given the name, but new documents in Script Editor will not be renamed since a backing file is required.  The default `savePath` is the appropriate ~/Library/Scripts/Applications/ folder and can be POSIX, the Desktop will be used if it is not set ("" or missing value).  The new document will be compiled according to the `compileNewDocuments` property setting.
+
+   Other than AppleScript's historical practice of saving properties and globals in the script file, regular scripts don't really have a preferences system.  This script prevents properties from being modified by copying their values into global values - there is an initial alert dialog to let you adjust a few of these values such as the auto-save and selection options so that you don't have to recompile the defaults in the script if you want to occasionally do something slightly different.  The default options are those that have been set in the script properties - any adjustments from the alert will only be applied to the current run and are not kept.
 *)
 
 
@@ -59,7 +59,6 @@ on run
 	initialize()
 end run
 
-
 on initialize() -- reset globals and get options
 	set {selectionOption, compileOption, saveOption, prefixOption, authorOption, editor} ¬
 		to {selectionFirst, compileAfterInsert, autoSave, namePrefix, authorInfo, targetEditor}
@@ -85,7 +84,6 @@ on initialize() -- reset globals and get options
 		if failure's errorNumber is not in {-128, 2700} then my performSelectorOnMainThread:"showAlert:" withObject:{messageText:"AutoCodeWrapper Options Error", infoText:(failure's errorMessage & "  (" & failure's errorNumber & ")")} waitUntilDone:true -- don't show for cancel and reveal options
 	end if
 end initialize
-
 
 on doStuff() -- get the source text and wrap it
 	set openDocuments to (run script "tell application \"" & editor & "\" to return (get documents)")
@@ -139,7 +137,6 @@ to makeWrapper(scriptText) -- make an insertion wrapper for the chosen script te
 	outputWrapper(theCode, prefixOption & defaultName & ".scpt")
 end makeWrapper
 
-
 # Return a handler call statement if a handler declaration is found, otherwise indicate a generic code wrapper.
 # A handler call statement does not include any comments added to the handler name - multi-line names are supported.
 to checkForHandler(scriptText)
@@ -168,7 +165,6 @@ to checkForHandler(scriptText)
 	return (text (second word of handlerCall) thru -1 of handlerCall) -- skip `on/to`
 end checkForHandler
 
-
 to wrapHandler(scriptText, handlerName, handlerCall, dateInfo) -- assemble and return a handler code insertion script
 	set addedLine to item (((last character of scriptText is not in {return, linefeed}) as integer) + 1) of {"", newline}
 	set {sourceTerm, lineOffset} to item (((editor is "Script Debugger") as integer) + 1) of {{"text", " + 1"}, {"source text", ""}}
@@ -182,21 +178,20 @@ set handlerCode to \"" & scriptText & addedLine & "\"
 
 # A script for inserting the above handler declaration or call statement at the current selection or insertion point:
 tell application \"" & editor & "\" to tell document 1
-	set insertionPoint to (first item of (get character range of the selection))" & lineOffset & "
-	if insertionPoint ≤ 3 then -- beginning of file
-		set contents of selection to handlerCall
-	else
-		set blankLines to true -- insert handler code if there are two or more preceding blank lines (at least 3 newline characters)
-		repeat with aCharacter in (characters of (text (insertionPoint - 3) thru (insertionPoint - 1) of (get its " & sourceTerm & ")))
-			if aCharacter is not in {return, linefeed} then set blankLines to false
-		end repeat
-		set contents of selection to item ((blankLines as integer) + 1) of {handlerCall, handlerCode}
-	end if" & newline & tab & item ((compileOption as integer) + 1) of {"-- ", ""} & "compile
+   set insertionPoint to (first item of (get character range of the selection))" & lineOffset & "
+   if insertionPoint ≤ 3 then -- beginning of file
+      set contents of selection to handlerCall
+   else
+      set blankLines to true -- insert handler code if there are two or more preceding blank lines (at least 3 newline characters)
+      repeat with aCharacter in (characters of (text (insertionPoint - 3) thru (insertionPoint - 1) of (get its " & sourceTerm & ")))
+         if aCharacter is not in {return, linefeed} then set blankLines to false
+      end repeat
+      set contents of selection to item ((blankLines as integer) + 1) of {handlerCall, handlerCode}
+   end if" & newline & tab & item ((compileOption as integer) + 1) of {"-- ", ""} & "compile
 end tell
 "
 	return theCode
 end wrapHandler
-
 
 to wrapCode(scriptText, snippetName, dateInfo) -- assemble and return a snippet code insertion script
 	set theCode to "
@@ -207,12 +202,11 @@ set theCode to \"" & scriptText & "\"
 
 # A script for inserting the above generic code at the current selection or insertion point:
 tell application \"" & editor & "\" to tell document 1
-	set contents of selection to theCode" & newline & tab & item ((compileOption as integer) + 1) of {"-- ", ""} & "compile
+   set contents of selection to theCode" & newline & tab & item ((compileOption as integer) + 1) of {"-- ", ""} & "compile
 end tell
 "
 	return theCode
 end wrapCode
-
 
 to outputWrapper(theCode, documentName) -- save the wrapper script or open it in a new document
 	try
@@ -254,7 +248,6 @@ to escapeString(theString as text) -- escape characters for an AppleScript strin
 	return theString
 end escapeString
 
-
 # Trim whitespace from a string with/without leading and/or trailing - given arguments are optional
 to trimWhitespace from (theString as text) given leading:(leading as boolean) : true, trailing:(trailing as boolean) : true
 	set whiteSpace to {space, tab, return, linefeed} -- most others (NBSP, etc) are not accepted or trimmed from compiled text
@@ -290,7 +283,6 @@ to showAlert:arguments -- common alert activation and error/options dispatch
 	end if
 end showAlert:
 
-
 to getOptions() -- get a few option choices for the current run
 	tell |+|'s NSAlert's alloc()'s init() to try
 		set accessory to my makeAccessory()
@@ -313,7 +305,6 @@ to getOptions() -- get a few option choices for the current run
 		set failure to {errorMessage:errorMessage, errorNumber:errorNumber}
 	end try
 end getOptions
-
 
 to makeAccessory() -- UI items for the initial options dialog
 	tell application "System Events" to set saveName to (get name of disk item destination)
@@ -340,7 +331,6 @@ to makeAccessory() -- UI items for the initial options dialog
 	end tell
 end makeAccessory
 
-
 to applyAccessoryValues(accessoryView) -- update option globals from alert values
 	tell accessoryView's contentView
 		set selectionOption to (its viewWithTag:111)'s state as boolean
@@ -352,7 +342,6 @@ to applyAccessoryValues(accessoryView) -- update option globals from alert value
 	end tell
 end applyAccessoryValues
 
-
 to makeCheckbox at (origin as list) given title:(title as text), tag:(tag as integer) : 0, state:(state as boolean) : false
 	set {target, action} to item (((tag is 333) as integer) + 1) of {{missing value, null}, {me, "checkboxAction:"}}
 	tell (|+|'s NSButton's checkboxWithTitle:title target:target action:action)
@@ -363,12 +352,10 @@ to makeCheckbox at (origin as list) given title:(title as text), tag:(tag as int
 	end tell
 end makeCheckbox
 
-
 on checkboxAction:sender -- enable the prefix textField with the checkbox
 	set parentView to sender's superview -- accessoryView box
 	(parentView's viewWithTag:444)'s setEnabled:(sender's state)
 end checkboxAction:
-
 
 to makeTextField at (origin as list) given label:(label as boolean) : false, stringValue:(stringValue as text) : "", tag:(tag as integer) : 0, tooltip:(tooltip as text) : ""
 	if label then tell (|+|'s NSTextField's labelWithString:stringValue)
