@@ -1,8 +1,8 @@
 
 #
-#	A `choose date` implementation using NSDatePickers with an optional label NSTextField that cover the NSAlert views.
-#	Multiple pickers are used to add a textual picker for the graphical clock - all pickers are synchronized.
-#	Updated for Tahoe.
+#  A `choose date` implementation using NSDatePickers with an optional label NSTextField that cover the NSAlert views.
+#  Multiple pickers are used to add a textual picker for the graphical clock - all pickers are synchronized.
+#  Updated for Tahoe.
 #
 
 
@@ -75,7 +75,7 @@ end getResults
 
 to addAccessorySubviews(alertWindow, labelString, initialDate) -- datePickers with a label textField
 	set accessoryFrame to (item 4 of alertWindow's contentView's subviews)'s frame as list
-	set {{x, y}, {width, height}} to accessoryFrame -- after layout, item 4 is the accessory view if used
+	set {{x, y}, {width, height}} to accessoryFrame -- an accessory view will be item 4 of the subviews after layout
 	set labelOffset to item (((labelString is "") as integer) + 1) of {102, 68} -- cover the icon
 	alertWindow's contentView's addSubview:(my (makeLabelField into {{x, y + labelOffset}, {width, 80}} for labelString given alignment:(current application's NSTextAlignmentCenter), textFont:(current application's NSFont's fontWithName:"Helvetica Neue Bold" |size|:13)))
 	set calendar of datePickers to (makeDatePicker into {{x, y}, {width / 2, y + 148}} given pickerType:"calendar", initialDate:initialDate) -- calendar to the left
@@ -93,18 +93,18 @@ to makeLabelField into (frame as list) for textString given textFont:textFont : 
 		its setFrame:frame
 		its setDrawsBackground:(not aligning) -- hide covered views
 		its setBordered:aligning
-		its setBackgroundColor:(my makeBackgroundColor()) -- note that colors like quinarySystemFillColor are not opaque
+		its setBackgroundColor:(my makeBackgroundColor())
 		its setAllowsEditingTextAttributes:true -- the following are ignored if using an attributed string:
 		if textFont is not missing value then its setFont:textFont -- NSFont
-		if textColor is not missing value then its setTextColor:textColor -- NSColor	
-		if alignment is not missing value then its setAlignment:alignment -- 0-4 or NSTextAlignment enum	
+		if textColor is not missing value then its setTextColor:textColor -- NSColor
+		if alignment is not missing value then its setAlignment:alignment -- 0-4 or NSTextAlignment enum
 		if linebreakMode is not missing value then its setLineBreakMode:linebreakMode -- 0-5 or NSLineBreakMode enum
 		return it
 	end tell
 end makeLabelField
 
-# Make and return an opaque background color similar to the window background.
-# Note that label colors and colors like quinarySystemFillColor are not opaque, and Tahoe colors have changed.
+# Make and return an opaque background color similar to the window background - adjusted for appearance, but is not dynamic.
+# Note that label colors and colors like quinarySystemFillColor are not opaque, and some Tahoe UI colors have changed.
 to makeBackgroundColor()
 	set dark to (((current application's NSApp's effectiveAppearance's |name|) as text) contains "dark")
 	set grays to item ((((get system attribute "sys1") ≥ 26) as integer) + 1) of {{0.92, 0.17}, {0.96, 0.08}} -- Tahoe?
